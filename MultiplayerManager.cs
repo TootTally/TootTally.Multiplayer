@@ -266,8 +266,10 @@ namespace TootTally.Multiplayer
                     _multiController.AnimatePanelPositions(new Vector2(0, 284), new Vector2(-1047, -28), new Vector2(-405, 114), new Vector2(-405, -170), new Vector2(234, -28));
                     break;
                 case MultiplayerController.MultiplayerState.Lobby:
+                    _multiController.AnimatePanelPositions(new Vector2(0, 912), new Vector2(-240, 600), new Vector2(402, 742), new Vector2(402, 458), new Vector2(1041, 600));
                     break;
                 case MultiplayerController.MultiplayerState.Hosting:
+                    _multiController.AnimatePanelPositions(new Vector2(0, 284), new Vector2(-1047, -28), new Vector2(-405, 114), new Vector2(-405, -170), new Vector2(234, -28));
                     break;
                 case MultiplayerController.MultiplayerState.SelectSong:
                     SceneManager.LoadScene("levelselect");

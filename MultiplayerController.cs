@@ -284,7 +284,7 @@ namespace TootTally.Multiplayer
                 _lobbyInfoTextList.Add(currentText);
             });
 
-            _connectButton = GameObjectFactory.CreateCustomButton(lobbyInfoPanelFG.transform, Vector2.zero, Vector2.one * 50, "Connect", "ConnectButton", null);
+            _connectButton = GameObjectFactory.CreateCustomButton(lobbyInfoPanelFG.transform, Vector2.zero, Vector2.one * 50, "Connect", "ConnectButton", OnConnectLobbyButtonClick);
         }
 
         public void OnHostLobbyButtonClick()
@@ -299,6 +299,11 @@ namespace TootTally.Multiplayer
                 users = new List<SerializableClass.MultiplayerUserInfo>()
             };
             UpdateCreateLobbyInfo();
+        }
+
+        public void OnConnectLobbyButtonClick()
+        {
+            MultiplayerManager.UpdateMultiplayerState(MultiplayerState.Lobby);
         }
 
         public void UpdateCreateLobbyInfo()
