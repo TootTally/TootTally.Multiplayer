@@ -21,7 +21,12 @@ namespace TootTally.Multiplayer
         private static CustomAnimation _multiBtnAnimation, _multiTextAnimation;
         private static MultiplayerController.MultiplayerState _state, _previousState;
         private static MultiplayerController _multiController;
+        private static bool _multiButtonLoaded;
 
+        public static void OnModuleLoad()
+        {
+            _multiButtonLoaded = false;
+        }
 
         [HarmonyPatch(typeof(PlaytestAnims), nameof(PlaytestAnims.Start))]
         [HarmonyPostfix]
@@ -162,7 +167,7 @@ namespace TootTally.Multiplayer
             });
 
             multiBtnEvents.triggers.Add(pointerExitEvent);
-
+            _multiButtonLoaded = true;
 
             #endregion
 
@@ -222,7 +227,8 @@ namespace TootTally.Multiplayer
         [HarmonyPostfix]
         public static void AnimateMultiButton(HomeController __instance)
         {
-            _multiButtonOutlineRectTransform.transform.parent.transform.Find("FG/texholder").GetComponent<CanvasGroup>().alpha = (_multiButtonOutlineRectTransform.localScale.y - 0.4f) / 1.5f;
+            if (_multiButtonLoaded)
+                _multiButtonOutlineRectTransform.transform.parent.transform.Find("FG/texholder").GetComponent<CanvasGroup>().alpha = (_multiButtonOutlineRectTransform.localScale.y - 0.4f) / 1.5f;
         }
 
         [HarmonyPatch(typeof(LevelSelectController), nameof(LevelSelectController.clickBack))]

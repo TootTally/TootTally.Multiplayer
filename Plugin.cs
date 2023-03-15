@@ -31,6 +31,7 @@ namespace TootTally.Multiplayer
 
         public void LoadModule()
         {
+            MultiplayerManager.OnModuleLoad();
             Harmony.CreateAndPatchAll(typeof(MultiplayerManager), PluginInfo.PLUGIN_GUID);
             LogInfo($"Module loaded!");
         }
