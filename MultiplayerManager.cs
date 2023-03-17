@@ -108,23 +108,26 @@ namespace TootTally.Multiplayer
                     return;
                 }
 
-                //Yoinked from DNSpy KEKW
+                PopUpNotifManager.DisplayNotif("Multiplayer under maintenance...", GameTheme.themeColors.notification.errorText);
+                return;
 
+                //Yoinked from DNSpy KEKW
                 __instance.musobj.Stop();
                 __instance.quickFlash(2);
-                __instance.fadeAndLoadScene(16);
+                __instance.fadeAndLoadScene(0);
                 //SceneManager.MoveGameObjectToScene(GameObject.Instantiate(multiplayerButton), scene);
+                
                 //1 is HomeScreen
                 //6 and 7 cards collection
-                //8 is LoadController
-                //9 is GameController
-                //10 is PointSceneController
-                //11 is some weird ass fucking notes
-                //12 is intro
-                //13 is boss fail animation
-                //14 is how to play
-                //15 is end scene
-                //16 is the demo scene
+                //9 is LoadController
+                //10 is GameController
+                //11 is PointSceneController
+                //12 is some weird ass fucking notes
+                //13 is intro
+                //14 is boss fail animation
+                //15 is how to play
+                //16 is end scene
+                //17 is the demo scene
             });
 
             EventTrigger multiBtnEvents = multiplayerHitbox.GetComponent<EventTrigger>();
@@ -231,7 +234,7 @@ namespace TootTally.Multiplayer
                 _multiButtonOutlineRectTransform.transform.parent.transform.Find("FG/texholder").GetComponent<CanvasGroup>().alpha = (_multiButtonOutlineRectTransform.localScale.y - 0.4f) / 1.5f;
         }
 
-        [HarmonyPatch(typeof(LevelSelectController), nameof(LevelSelectController.clickBack))]
+        /*[HarmonyPatch(typeof(LevelSelectController), nameof(LevelSelectController.clickBack))]
         [HarmonyPrefix]
         public static bool ClickBackButtonMultiplayerSelectSong(LevelSelectController __instance)
         {
@@ -241,7 +244,7 @@ namespace TootTally.Multiplayer
             __instance.doSfx(__instance.sfx_slidedown);
             __instance.fadeOut("playtest", 0.35f);
             return false;
-        }
+        }*/
 
         private static void ResolveMultiplayerState()
         {
