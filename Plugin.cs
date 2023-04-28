@@ -1,5 +1,6 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
+using BepInEx.Logging;
 using HarmonyLib;
 using TootTally.Utils;
 
@@ -12,6 +13,8 @@ namespace TootTally.Multiplayer
         public string Name { get => PluginInfo.PLUGIN_NAME; set => Name = value; }
         public bool IsConfigInitialized { get; set; }
         public ConfigEntry<bool> ModuleConfigEnabled { get; set; }
+
+        public ManualLogSource GetLogger => Logger;
 
         public void LogInfo(string msg) => Logger.LogInfo(msg);
         public void LogError(string msg) => Logger.LogError(msg);

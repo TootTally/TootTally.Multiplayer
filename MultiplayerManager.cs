@@ -108,13 +108,13 @@ namespace TootTally.Multiplayer
                     return;
                 }
 
-                PopUpNotifManager.DisplayNotif("Multiplayer under maintenance...", GameTheme.themeColors.notification.errorText);
-                return;
+                /*PopUpNotifManager.DisplayNotif("Multiplayer under maintenance...", GameTheme.themeColors.notification.errorText);
+                return;*/
 
                 //Yoinked from DNSpy KEKW
                 __instance.musobj.Stop();
                 __instance.quickFlash(2);
-                __instance.fadeAndLoadScene(0);
+                __instance.fadeAndLoadScene(18);
                 //SceneManager.MoveGameObjectToScene(GameObject.Instantiate(multiplayerButton), scene);
                 
                 //1 is HomeScreen

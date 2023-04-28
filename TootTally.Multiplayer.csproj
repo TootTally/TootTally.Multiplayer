@@ -16,6 +16,9 @@
 		<PackageReference Include="BepInEx.Core" Version="5.*" />
 		<PackageReference Include="BepInEx.PluginInfoProps" Version="1.*" />
 		<PackageReference Include="UnityEngine.Modules" Version="2019.3.11" IncludeAssets="compile" />
+		<PackageReference Include="TromboneChamp.GameLibs" Version="*" />
+		<PackageReference Include="TromboneChamp.BaboonAPI" Version="*" />
+		<PackageReference Include="TromboneChamp.TrombLoader" Version="*" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
@@ -23,30 +26,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Reference Include="0Harmony">
-			<HintPath>$(TromboneChampDir)\BepInEx\plugins\TootTally-TootTally.dll</HintPath>
-		</Reference>
-		<Reference Include="0Harmony">
-			<HintPath>$(TromboneChampDir)\BepInEx\core\0Harmony.dll</HintPath>
-		</Reference>
-		<Reference Include="Assembly-CSharp">
-			<HintPath>$(TromboneChampDir)\TromboneChamp_Data\Managed\Assembly-CSharp-nstrip.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine">
-			<HintPath>$(TromboneChampDir)\TromboneChamp_Data\Managed\UnityEngine.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.CoreModule">
-			<HintPath>$(TromboneChampDir)\TromboneChamp_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.InputLegacyModule">
-			<HintPath>$(TromboneChampDir)\TromboneChamp_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UI">
-			<HintPath>$(TromboneChampDir)\TromboneChamp_Data\Managed\UnityEngine.UI.dll</HintPath>
-		</Reference>
-		<Reference Include="TrombSettings">
-			<HintPath>$(TromboneTootDir)\BepInEx\plugins\emmett-TrombSettings\TrombSettings.dll</HintPath>
-		</Reference>
 		<Reference Include="TootTally">
 			<HintPath>$(TromboneTootDir)\BepInEx\plugins\TootTally-TootTally\TootTally.dll</HintPath>
 		</Reference>
