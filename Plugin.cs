@@ -26,7 +26,6 @@ namespace TootTally.Multiplayer
             Instance = this;
 
             ModuleConfigEnabled = TootTally.Plugin.Instance.Config.Bind("Modules", "Multiplayer", true, "Enable TootTally's Multiplayer Module");
-            OptionalTrombSettings.Add(TootTally.Plugin.Instance.moduleSettings, ModuleConfigEnabled);
             TootTally.Plugin.AddModule(this);
         }
 

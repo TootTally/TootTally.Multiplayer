@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using TMPro;
 using TootTally.Graphics;
 using TootTally.Graphics.Animation;
 using TootTally.Utils;
@@ -21,7 +22,7 @@ namespace TootTally.Multiplayer
         private static GameObject _activeLobbyPanel, _titlePanel, _lobbyInfoPanel, _buttonsPanel, _createLobbyPanel;
 
         private static GameObject _lobbyTitleInputHolder, _lobbyPasswordInputHolder;
-        private static Text _lobbyNameTitle, _lobbyPasswordText, _lobbyMaxPlayerText;
+        private static TMP_Text _lobbyNameTitle, _lobbyPasswordText, _lobbyMaxPlayerText;
         private static int _createLobbyMaxPlayerCount;
 
         private static CanvasGroup _acceptButtonCanvasGroup, _topBarCanvasGroup, _mainTextCanvasGroup, _declineButtonCanvasGroup;
@@ -29,7 +30,7 @@ namespace TootTally.Multiplayer
         private static List<GameObject> _lobbyInfoRowsList;
 
         private static SerializableClass.MultiplayerLobbyInfo _createLobbyInfo;
-        private static List<Text> _lobbyInfoTextList;
+        private static List<TMP_Text> _lobbyInfoTextList;
         private static CustomButton _connectButton, _createLobbyButton;
 
         #region LocalTesting
@@ -98,7 +99,7 @@ namespace TootTally.Multiplayer
 
             _lobbyInfoList = new List<SerializableClass.MultiplayerLobbyInfo>();
             _lobbyInfoRowsList = new List<GameObject>();
-            _lobbyInfoTextList = new List<Text>();
+            _lobbyInfoTextList = new List<TMP_Text>();
 
         }
 
@@ -182,10 +183,10 @@ namespace TootTally.Multiplayer
             _titlePanel.GetComponent<RectTransform>().localScale = Vector2.zero;
             HorizontalLayoutGroup topPanelLayoutGroup = _titlePanel.transform.Find("panelfg").gameObject.AddComponent<HorizontalLayoutGroup>();
             topPanelLayoutGroup.padding = new RectOffset(8, 8, 8, 8);
-            Text lobbyText = GameObjectFactory.CreateSingleText(_titlePanel.transform.Find("panelfg"), "TitleText", "TootTally Multiplayer Lobbies", Color.white);
-            lobbyText.alignment = TextAnchor.MiddleLeft;
-            Text serverText = GameObjectFactory.CreateSingleText(_titlePanel.transform.Find("panelfg"), "ServerText", "Current Server: localHost", Color.white);
-            serverText.alignment = TextAnchor.MiddleRight;
+            TMP_Text lobbyText = GameObjectFactory.CreateSingleText(_titlePanel.transform.Find("panelfg"), "TitleText", "TootTally Multiplayer Lobbies", Color.white);
+            lobbyText.alignment = TextAlignmentOptions.MidlineLeft;
+            TMP_Text serverText = GameObjectFactory.CreateSingleText(_titlePanel.transform.Find("panelfg"), "ServerText", "Current Server: localHost", Color.white);
+            serverText.alignment = TextAlignmentOptions.MidlineLeft;
             #endregion
 
             #region ActiveLobbyPanel
@@ -223,9 +224,9 @@ namespace TootTally.Multiplayer
             _lobbyTitleInputHolder.name = "LobbyNameInput";
             GameObject.DestroyImmediate(_lobbyTitleInputHolder.GetComponent<Text>());
 
-            InputField lobbyNameInputField = _lobbyTitleInputHolder.AddComponent<InputField>();
+            TMP_InputField lobbyNameInputField = _lobbyTitleInputHolder.AddComponent<TMP_InputField>();
             lobbyNameInputField.textComponent = _lobbyNameTitle;
-            lobbyNameInputField.textComponent.alignment = TextAnchor.MiddleCenter;
+            lobbyNameInputField.textComponent.alignment = TextAlignmentOptions.MidlineLeft;
             lobbyNameInputField.image = _lobbyTitleInputHolder.AddComponent<Image>();
             lobbyNameInputField.image.color = GameTheme.themeColors.leaderboard.rowEntry;
             lobbyNameInputField.text = $"{TootTally.Plugin.userInfo.username}'s Lobby";
@@ -237,9 +238,9 @@ namespace TootTally.Multiplayer
             _lobbyPasswordInputHolder.name = "LobbyPasswordInput";
             GameObject.DestroyImmediate(_lobbyPasswordInputHolder.GetComponent<Text>());
 
-            InputField lobbyPasswordInputField = _lobbyPasswordInputHolder.AddComponent<InputField>();
+            TMP_InputField lobbyPasswordInputField = _lobbyPasswordInputHolder.AddComponent<TMP_InputField>();
             lobbyPasswordInputField.textComponent = _lobbyPasswordText;
-            lobbyPasswordInputField.textComponent.alignment = TextAnchor.MiddleCenter;
+            lobbyPasswordInputField.textComponent.alignment = TextAlignmentOptions.MidlineLeft;
             lobbyPasswordInputField.image = _lobbyPasswordInputHolder.AddComponent<Image>();
             lobbyPasswordInputField.image.color = GameTheme.themeColors.leaderboard.rowEntry;
             lobbyPasswordInputField.text = $"Password";
@@ -278,8 +279,8 @@ namespace TootTally.Multiplayer
             GameObject lobbyInfoPanelFG = _lobbyInfoPanel.transform.Find("panelfg").gameObject;
             lobbyInfo.users.ForEach(user =>
             {
-                Text currentText = GameObjectFactory.CreateSingleText(lobbyInfoPanelFG.transform, $"{user.username}TextInfo", $"#{user.rank} {user.username} : {user.state}", Color.white);
-                currentText.alignment = TextAnchor.MiddleLeft;
+                TMP_Text currentText = GameObjectFactory.CreateSingleText(lobbyInfoPanelFG.transform, $"{user.username}TextInfo", $"#{user.rank} {user.username} : {user.state}", Color.white);
+                currentText.alignment = TextAlignmentOptions.MidlineLeft;
                 currentText.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 40);
                 _lobbyInfoTextList.Add(currentText);
             });
@@ -325,13 +326,13 @@ namespace TootTally.Multiplayer
             var lobbyTitle = _lobbyTitleInputHolder.GetComponent<InputField>().text;
             var lobbyPassword = _lobbyPasswordInputHolder.GetComponent<InputField>().text;
 
-            Text lobbyNameText = GameObjectFactory.CreateSingleText(lobbyInfoPanelFG.transform, $"CreateLobbyNameInfo", $"{lobbyTitle}", Color.white);
-            lobbyNameText.alignment = TextAnchor.MiddleLeft;
+            TMP_Text lobbyNameText = GameObjectFactory.CreateSingleText(lobbyInfoPanelFG.transform, $"CreateLobbyNameInfo", $"{lobbyTitle}", Color.white);
+            lobbyNameText.alignment = TextAlignmentOptions.MidlineLeft;
             lobbyNameText.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 40);
             _lobbyInfoTextList.Add(lobbyNameText);
 
-            Text lobbyPasswordText = GameObjectFactory.CreateSingleText(lobbyInfoPanelFG.transform, $"CreateLobbyPasswordInfo", $"{lobbyPassword}", Color.white);
-            lobbyPasswordText.alignment = TextAnchor.MiddleLeft;
+            TMP_Text lobbyPasswordText = GameObjectFactory.CreateSingleText(lobbyInfoPanelFG.transform, $"CreateLobbyPasswordInfo", $"{lobbyPassword}", Color.white);
+            lobbyPasswordText.alignment = TextAlignmentOptions.MidlineLeft;
             lobbyPasswordText.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 40);
             _lobbyInfoTextList.Add(lobbyPasswordText);
 

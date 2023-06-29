@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>netstandard2.1</TargetFramework>
+		<TargetFramework>net472</TargetFramework>
 		<AssemblyName>TootTally.Multiplayer</AssemblyName>
 		<Description>Multiplayer Module For TootTally</Description>
 		<Version>0.1.0</Version>
@@ -16,9 +16,9 @@
 		<PackageReference Include="BepInEx.Core" Version="5.*" />
 		<PackageReference Include="BepInEx.PluginInfoProps" Version="1.*" />
 		<PackageReference Include="UnityEngine.Modules" Version="2019.3.11" IncludeAssets="compile" />
-		<PackageReference Include="TromboneChamp.GameLibs" Version="*" />
-		<PackageReference Include="TromboneChamp.BaboonAPI" Version="*" />
-		<PackageReference Include="TromboneChamp.TrombLoader" Version="*" />
+		<PackageReference Include="TromboneChamp.GameLibs" Version="1.12.0-beta" />
+		<PackageReference Include="TromboneChamp.BaboonAPI" Version="2.2.0" />
+		<PackageReference Include="TromboneChamp.TrombLoader" Version="2.0.0-rc.1" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
