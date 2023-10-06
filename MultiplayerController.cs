@@ -1,16 +1,13 @@
-﻿using HarmonyLib;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using TMPro;
 using TootTally.Graphics;
 using TootTally.Graphics.Animation;
 using TootTally.Utils;
+using TootTally.Utils.APIServices;
 using TootTally.Utils.Helpers;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace TootTally.Multiplayer
@@ -18,20 +15,23 @@ namespace TootTally.Multiplayer
     public class MultiplayerController
     {
         private static PlaytestAnims _currentInstance;
-        private static GameObject _mainPanel, _mainPanelFg, _mainPanelBorder, _acceptButton, _declineButton, _topBar;
-        private static GameObject _activeLobbyPanel, _titlePanel, _lobbyInfoPanel, _buttonsPanel, _createLobbyPanel;
 
-        private static GameObject _lobbyTitleInputHolder, _lobbyPasswordInputHolder;
-        private static TMP_Text _lobbyNameTitle, _lobbyPasswordText, _lobbyMaxPlayerText;
-        private static int _createLobbyMaxPlayerCount;
-
-        private static CanvasGroup _acceptButtonCanvasGroup, _topBarCanvasGroup, _mainTextCanvasGroup, _declineButtonCanvasGroup;
         private static List<SerializableClass.MultiplayerLobbyInfo> _lobbyInfoList;
         private static List<GameObject> _lobbyInfoRowsList;
 
+        private static GameObject _canvas, _mainPanel, _lobbyInfoContainer, _lobbyDetailContainer, _lobbyConnectContainer;
+        private static ScrollableSliderHandler _scrollingHandler;
+
+        private static TMP_Text _lobbyPlayerListText;
+
         private static SerializableClass.MultiplayerLobbyInfo _createLobbyInfo;
-        private static List<TMP_Text> _lobbyInfoTextList;
         private static CustomButton _connectButton, _createLobbyButton;
+        private static CustomAnimation _connectButtonScaleAnimation;
+
+        private static EventTrigger.Entry _pointerExitLobbyContainerEvent;
+
+        private static SerializableClass.MultiplayerLobbyInfo _selectedLobby;
+        private static GameObject _selectedLobbyContainer;
 
         #region LocalTesting
         private static readonly SerializableClass.MultiplayerUserInfo _gristUser = new SerializableClass.MultiplayerUserInfo()
@@ -86,21 +86,49 @@ namespace TootTally.Multiplayer
             GameObject canvasWindow = GameObject.Find("Canvas-Window").gameObject;
             Transform panelTransform = canvasWindow.transform.Find("Panel");
 
-            _mainPanel = GameObjectFactory.CreateMultiplayerMainPanel(panelTransform, "MultiPanel");
+            _canvas = GameObject.Instantiate(MultiplayerAssetManager.GetPrefab("multiplayercanvas"));
+            _mainPanel = _canvas.transform.Find("MainPanelBG").gameObject;
+            _mainPanel.transform.localScale = Vector2.zero;
 
-            _mainPanelFg = _mainPanel.transform.Find("panelfg").gameObject;
-            _mainPanelFg.AddComponent<Mask>();
+            var topPanel = _mainPanel.transform.Find("MainPanelFG/TopMain/TopMainContainer");
+            var titleText = GameObjectFactory.CreateSingleText(topPanel, "TitleText", "TootTally Multiplayer", Color.white);
+            titleText.enableAutoSizing = true;
+            titleText.alignment = TextAlignmentOptions.Left;
+            var serverText = GameObjectFactory.CreateSingleText(topPanel, "ServerText", "Server: Toronto", Color.white);
+            serverText.enableAutoSizing = true;
+            serverText.alignment = TextAlignmentOptions.Right;
 
-            _mainPanelBorder = _mainPanel.transform.Find("Panelbg1").gameObject;
+            _lobbyInfoContainer = _mainPanel.transform.Find("MainPanelFG/BottomMain/LeftPanel/LeftPanelContainer").gameObject;
+            var slider = new GameObject("ContainerSlider", typeof(Slider)).GetComponent<Slider>();
+            slider.gameObject.SetActive(true);
+            slider.onValueChanged.AddListener((value) => OnSliderValueChangeScrollContainer(_lobbyInfoContainer, value));
+            _scrollingHandler = slider.gameObject.AddComponent<ScrollableSliderHandler>();
+            _scrollingHandler.slider = slider;
+            _scrollingHandler.enabled = false;
 
-            _topBar = _mainPanel.transform.Find("top").gameObject;
-            _topBarCanvasGroup = _topBar.GetComponent<CanvasGroup>();
-            _mainTextCanvasGroup = _mainPanelFg.transform.Find("FactText").GetComponent<CanvasGroup>();
+            _lobbyDetailContainer = _mainPanel.transform.Find("MainPanelFG/BottomMain/RightPanel/TopContainer").gameObject;
+            _lobbyPlayerListText = GameObjectFactory.CreateSingleText(_lobbyDetailContainer.transform, "LobbyDetailInfoText", "PlaceHolder", Color.white);
+            _lobbyPlayerListText.enableAutoSizing = true;
+            _lobbyPlayerListText.fontSizeMax = 42;
+            _lobbyPlayerListText.alignment = TextAlignmentOptions.TopLeft;
+
+            _pointerExitLobbyContainerEvent = new EventTrigger.Entry();
+            _pointerExitLobbyContainerEvent.eventID = EventTriggerType.PointerExit;
+            _pointerExitLobbyContainerEvent.callback.AddListener((data) => OnMouseExitClearLobbyDetails());
+
+            _lobbyConnectContainer = _mainPanel.transform.Find("MainPanelFG/BottomMain/RightPanel/BottomContainer").gameObject;
+            var connectLayout = _lobbyConnectContainer.GetComponent<VerticalLayoutGroup>();
+            connectLayout.childControlHeight = connectLayout.childControlWidth = false;
+            connectLayout.childAlignment = TextAnchor.MiddleCenter;
+
+            _connectButton = GameObjectFactory.CreateCustomButton(_lobbyConnectContainer.transform, Vector2.zero, new Vector2(150, 50), "Connect", "LobbyConnectButton");
+            _connectButton.gameObject.SetActive(false);
 
             _lobbyInfoList = new List<SerializableClass.MultiplayerLobbyInfo>();
             _lobbyInfoRowsList = new List<GameObject>();
-            _lobbyInfoTextList = new List<TMP_Text>();
 
+            GetLobbyInfo();
+            AnimationManager.AddNewScaleAnimation(_mainPanel, Vector3.one, 1f, GetSecondDegreeAnimation(1.5f), (sender) => UpdateLobbyInfo(true));
         }
 
         public void GetLobbyInfo()
@@ -151,18 +179,10 @@ namespace TootTally.Multiplayer
             });
         }
 
-        public void AddAcceptDeclineButtonsToPanelFG()
+        private static void OnSliderValueChangeScrollContainer(GameObject container, float value)
         {
-            _acceptButton = GameObjectFactory.CreateCustomButton(_mainPanelFg.transform, new Vector2(-80, -340), new Vector2(200, 50), "Accept", "AcceptButton", OnAcceptButtonClick).gameObject;
-            _acceptButtonCanvasGroup = _acceptButton.AddComponent<CanvasGroup>();
-            _declineButton = GameObjectFactory.CreateCustomButton(_mainPanelFg.transform, new Vector2(-320, -340), new Vector2(200, 50), "Decline", "DeclineButton", OnDeclineButtonClick).gameObject;
-            _declineButtonCanvasGroup = _declineButton.AddComponent<CanvasGroup>();
-        }
-
-        public void OnLoadPanelsScreensState()
-        {
-            DestroyFactTextTopBarAndAcceptDeclineButtons();
-            AddHomeScreenPanelsToMainPanel();
+            var gridPanelRect = container.GetComponent<RectTransform>();
+            gridPanelRect.anchoredPosition = new Vector2(gridPanelRect.anchoredPosition.x, Mathf.Min((value * (_lobbyInfoList.Count - 7f) * 105f) - 440f, ((_lobbyInfoList.Count - 8f) * 105f) + 74f - 440f)); //This is so scuffed I fucking love it
         }
 
         public void RefreshAllLobbyInfo()
@@ -170,135 +190,100 @@ namespace TootTally.Multiplayer
             _lobbyInfoRowsList.ForEach(row => GameObject.DestroyImmediate(row));
             _lobbyInfoRowsList.Clear();
 
-            GameObject leftPanelFG = _activeLobbyPanel.transform.Find("panelfg").gameObject;
-
-            foreach (SerializableClass.MultiplayerLobbyInfo multiLobbyInfo in _lobbyInfoList)
-                _lobbyInfoRowsList.Add(GameObjectFactory.CreateLobbyInfoRow(leftPanelFG.transform, $"{multiLobbyInfo.name}Lobby", multiLobbyInfo, delegate { DisplayLobbyInfo(multiLobbyInfo); }));
         }
 
-        public void AddHomeScreenPanelsToMainPanel()
+        private IEnumerator<WaitForSeconds> DelayDisplayLobbyInfo(float delay, SerializableClass.MultiplayerLobbyInfo lobby, Action<SerializableClass.MultiplayerLobbyInfo> callback)
         {
-            #region TitlePanel
-            _titlePanel = GameObjectFactory.CreateEmptyMultiplayerPanel(_mainPanelFg.transform, "TitlePanel", new Vector2(1230, 50), new Vector2(0, 284));
-            _titlePanel.GetComponent<RectTransform>().localScale = Vector2.zero;
-            HorizontalLayoutGroup topPanelLayoutGroup = _titlePanel.transform.Find("panelfg").gameObject.AddComponent<HorizontalLayoutGroup>();
-            topPanelLayoutGroup.padding = new RectOffset(8, 8, 8, 8);
-            TMP_Text lobbyText = GameObjectFactory.CreateSingleText(_titlePanel.transform.Find("panelfg"), "TitleText", "TootTally Multiplayer Lobbies", Color.white);
-            lobbyText.alignment = TextAlignmentOptions.MidlineLeft;
-            TMP_Text serverText = GameObjectFactory.CreateSingleText(_titlePanel.transform.Find("panelfg"), "ServerText", "Current Server: localHost", Color.white);
-            serverText.alignment = TextAlignmentOptions.MidlineLeft;
-            #endregion
-
-            #region ActiveLobbyPanel
-            _activeLobbyPanel = GameObjectFactory.CreateEmptyMultiplayerPanel(_mainPanelFg.transform, "ActiveLobbyPanel", new Vector2(750, 564), new Vector2(-240, -28));
-            _activeLobbyPanel.GetComponent<RectTransform>().localScale = Vector2.zero;
-            VerticalLayoutGroup leftPanelLayoutGroup = _activeLobbyPanel.transform.Find("panelfg").gameObject.AddComponent<VerticalLayoutGroup>();
-            leftPanelLayoutGroup.childForceExpandHeight = leftPanelLayoutGroup.childScaleHeight = leftPanelLayoutGroup.childControlHeight = false;
-            leftPanelLayoutGroup.padding = new RectOffset(8, 8, 8, 8);
-            GetLobbyInfo();
-            RefreshAllLobbyInfo();
-            #endregion
-
-            #region LobbyInfoPanel
-            _lobbyInfoPanel = GameObjectFactory.CreateEmptyMultiplayerPanel(_mainPanelFg.transform, "LobbyInfoPanel", new Vector2(426, 280), new Vector2(402, -170));
-            _lobbyInfoPanel.GetComponent<RectTransform>().localScale = Vector2.zero;
-            VerticalLayoutGroup lobbyInfoLayoutGroup = _lobbyInfoPanel.transform.Find("panelfg").gameObject.AddComponent<VerticalLayoutGroup>();
-            lobbyInfoLayoutGroup.childForceExpandHeight = lobbyInfoLayoutGroup.childScaleHeight = lobbyInfoLayoutGroup.childControlHeight = false;
-            lobbyInfoLayoutGroup.padding = new RectOffset(8, 8, 8, 8);
-            #endregion
-
-            #region ButtonsPanel
-            _buttonsPanel = GameObjectFactory.CreateEmptyMultiplayerPanel(_mainPanelFg.transform, "ButtonsPanel", new Vector2(426, 280), new Vector2(402, 114));
-            _buttonsPanel.GetComponent<RectTransform>().localScale = Vector2.zero;
-            GameObjectFactory.CreateCustomButton(_buttonsPanel.transform, Vector2.one, new Vector2(190, 60), "Host Lobby", "HostLobbyButton", OnHostLobbyButtonClick);
-            #endregion
-
-            #region CreateLobbyPanel
-            _createLobbyPanel = GameObjectFactory.CreateEmptyMultiplayerPanel(_mainPanelFg.transform, "CreateLobbyPanel", new Vector2(750, 564), new Vector2(1041, -28));
-            GameObject lobbyPanelFG = _createLobbyPanel.transform.Find("panelfg").gameObject;
-            VerticalLayoutGroup lobbyPanelLayoutGroup = lobbyPanelFG.AddComponent<VerticalLayoutGroup>();
-
-            //Lobby Name Input Field
-            _lobbyNameTitle = GameObjectFactory.CreateSingleText(lobbyPanelFG.transform, "LobbyNameText", $"{TootTally.Plugin.userInfo.username}'s Lobby", Color.white);
-            _lobbyTitleInputHolder = GameObject.Instantiate(_lobbyNameTitle.gameObject, _lobbyNameTitle.transform);
-            _lobbyTitleInputHolder.name = "LobbyNameInput";
-            GameObject.DestroyImmediate(_lobbyTitleInputHolder.GetComponent<Text>());
-
-            TMP_InputField lobbyNameInputField = _lobbyTitleInputHolder.AddComponent<TMP_InputField>();
-            lobbyNameInputField.textComponent = _lobbyNameTitle;
-            lobbyNameInputField.textComponent.alignment = TextAlignmentOptions.MidlineLeft;
-            lobbyNameInputField.image = _lobbyTitleInputHolder.AddComponent<Image>();
-            lobbyNameInputField.image.color = GameTheme.themeColors.leaderboard.rowEntry;
-            lobbyNameInputField.text = $"{TootTally.Plugin.userInfo.username}'s Lobby";
-            lobbyNameInputField.onValueChanged.AddListener((sender) => UpdateCreateLobbyInfo());
-
-            //Lobby Password Input Field
-            _lobbyPasswordText = GameObjectFactory.CreateSingleText(lobbyPanelFG.transform, "LobbyPasswordText", $"Password", Color.white);
-            _lobbyPasswordInputHolder = GameObject.Instantiate(_lobbyPasswordText.gameObject, _lobbyPasswordText.transform);
-            _lobbyPasswordInputHolder.name = "LobbyPasswordInput";
-            GameObject.DestroyImmediate(_lobbyPasswordInputHolder.GetComponent<Text>());
-
-            TMP_InputField lobbyPasswordInputField = _lobbyPasswordInputHolder.AddComponent<TMP_InputField>();
-            lobbyPasswordInputField.textComponent = _lobbyPasswordText;
-            lobbyPasswordInputField.textComponent.alignment = TextAlignmentOptions.MidlineLeft;
-            lobbyPasswordInputField.image = _lobbyPasswordInputHolder.AddComponent<Image>();
-            lobbyPasswordInputField.image.color = GameTheme.themeColors.leaderboard.rowEntry;
-            lobbyPasswordInputField.text = $"Password";
-            lobbyPasswordInputField.onValueChanged.AddListener((sender) => UpdateCreateLobbyInfo());
-
-            _createLobbyMaxPlayerCount = 8;
-            _lobbyMaxPlayerText = GameObjectFactory.CreateSingleText(lobbyPanelFG.transform, "LobbyMaxPlayerText", $"Max Player: {_createLobbyMaxPlayerCount}", Color.white);
-            _lobbyMaxPlayerText.GetComponent<RectTransform>().sizeDelta = Vector2.zero;
-            GameObjectFactory.CreateCustomButton(_lobbyMaxPlayerText.transform, new Vector2(-250, -76), new Vector2(30, 30), "▲", "IncreaseMaxPlayerButton", delegate { OnMaxPlayerButtonPress(1); });
-            GameObjectFactory.CreateCustomButton(_lobbyMaxPlayerText.transform, new Vector2(-460, -76), new Vector2(30, 30), "▼", "DecreaseMaxPlayerButton", delegate { OnMaxPlayerButtonPress(-1); });
-            #endregion
-        }
-
-        public void OnMaxPlayerButtonPress(int countChange)
-        {
-            _createLobbyMaxPlayerCount += countChange;
-            UpdateMaxPlayerText();
-            UpdateLobbyInfoData();
-        }
-
-        public void UpdateMaxPlayerText()
-        {
-            _lobbyMaxPlayerText.text = $"Max Player: {_createLobbyMaxPlayerCount}";
+            yield return new WaitForSeconds(delay);
+            callback(lobby);
         }
 
         public void DisplayLobbyInfo(SerializableClass.MultiplayerLobbyInfo lobbyInfo)
         {
-            if (_lobbyInfoTextList.Count > 0)
-                _lobbyInfoTextList.ForEach(textObj => GameObject.DestroyImmediate(textObj.gameObject));
-            if (_connectButton != null)
-                GameObject.DestroyImmediate(_connectButton.gameObject);
-            if (_createLobbyButton != null)
-                GameObject.DestroyImmediate(_createLobbyButton.gameObject);
+            var lobbyInfoContainer = GameObject.Instantiate(MultiplayerAssetManager.GetPrefab("containerboxhorizontal"), _lobbyInfoContainer.transform);
+            var button = lobbyInfoContainer.AddComponent<EventTrigger>();
 
-            _lobbyInfoTextList.Clear();
-            GameObject lobbyInfoPanelFG = _lobbyInfoPanel.transform.Find("panelfg").gameObject;
-            lobbyInfo.users.ForEach(user =>
+            EventTrigger.Entry pointerEnterEvent = new EventTrigger.Entry();
+            pointerEnterEvent.eventID = EventTriggerType.PointerEnter;
+            pointerEnterEvent.callback.AddListener((data) => OnMouseEnterDisplayLobbyDetails(lobbyInfo, lobbyInfoContainer));
+            button.triggers.Add(pointerEnterEvent);
+
+            EventTrigger.Entry pointerClickEvent = new EventTrigger.Entry();
+            pointerClickEvent.eventID = EventTriggerType.PointerClick;
+            pointerClickEvent.callback.AddListener((data) => OnMouseClickSelectLobby(lobbyInfo, lobbyInfoContainer));
+            button.triggers.Add(pointerClickEvent);
+
+            button.triggers.Add(_pointerExitLobbyContainerEvent);
+
+            lobbyInfoContainer.transform.eulerAngles = new Vector3(270, 25, 0);
+            var test = GameObject.Instantiate(MultiplayerAssetManager.GetPrefab("containerboxvertical"), lobbyInfoContainer.transform);
+            var t1 = GameObjectFactory.CreateSingleText(test.transform, "LobbyName", lobbyInfo.name, Color.white);
+            var t2 = GameObjectFactory.CreateSingleText(test.transform, "LobbyState", lobbyInfo.currentState, Color.white);
+            t1.alignment = t2.alignment = TextAlignmentOptions.Left;
+            GameObjectFactory.CreateSingleText(lobbyInfoContainer.transform, "LobbyTitle", $"{lobbyInfo.title}", Color.white);
+            var test2 = GameObject.Instantiate(MultiplayerAssetManager.GetPrefab("containerboxvertical"), lobbyInfoContainer.transform);
+            var t3 = GameObjectFactory.CreateSingleText(test2.transform, "LobbyCount", $"{lobbyInfo.users.Count}/{lobbyInfo.maxPlayerCount}", Color.white);
+            var t4 = GameObjectFactory.CreateSingleText(test2.transform, "LobbyPing", $"{lobbyInfo.ping}ms", Color.white);
+            t3.alignment = t4.alignment = TextAlignmentOptions.Right;
+            AnimationManager.AddNewEulerAngleAnimation(lobbyInfoContainer, new Vector3(25, 25, 0), 2f, new EasingHelper.SecondOrderDynamics(1.25f, 1f, 1f));
+        }
+
+        public void OnMouseEnterDisplayLobbyDetails(SerializableClass.MultiplayerLobbyInfo lobbyInfo, GameObject lobbyContainer) //TODO: Add small outline to hovered lobby
+        {
+            _lobbyPlayerListText.text = "<u>Player List</u>\n";
+            lobbyInfo.users.ForEach(u => _lobbyPlayerListText.text += $"{u.username}\n");
+        }
+
+        public void OnMouseExitClearLobbyDetails()
+        {
+            if (_selectedLobby != null)
+                OnMouseEnterDisplayLobbyDetails(_selectedLobby, _selectedLobbyContainer);
+            else
+                _lobbyPlayerListText.text = "";
+        }
+
+        public void OnMouseClickSelectLobby(SerializableClass.MultiplayerLobbyInfo lobbyInfo, GameObject lobbyContainer)
+        {
+            if (_selectedLobby == lobbyInfo) return;
+
+            if (_selectedLobbyContainer != null)
+                GameObject.DestroyImmediate(_selectedLobbyContainer.GetComponent<Outline>());
+
+            _selectedLobby = lobbyInfo;
+            _selectedLobbyContainer = lobbyContainer;
+            var outline = _selectedLobbyContainer.AddComponent<Outline>();
+            outline.effectColor = new Color(1, 0, 0);
+            outline.effectDistance = Vector2.one * 5f;
+
+            _connectButtonScaleAnimation?.Dispose();
+            _connectButton.gameObject.SetActive(true);
+            _connectButton.transform.localScale = Vector2.zero;
+            _connectButton.gameObject.GetComponent<RectTransform>().pivot = Vector2.one / 2f;
+            _connectButtonScaleAnimation = AnimationManager.AddNewScaleAnimation(_connectButton.gameObject, Vector3.one, 1f, new EasingHelper.SecondOrderDynamics(2.5f, 0.98f, 1.1f));
+        }
+
+        public void OnConnectButtonClick()
+        {
+            if (_selectedLobby == null) return;
+        }
+
+        public void UpdateLobbyInfo(bool delay)
+        {
+            for (int i = 0; i < _lobbyInfoList.Count; i++)
             {
-                TMP_Text currentText = GameObjectFactory.CreateSingleText(lobbyInfoPanelFG.transform, $"{user.username}TextInfo", $"#{user.rank} {user.username} : {user.state}", Color.white);
-                currentText.alignment = TextAlignmentOptions.MidlineLeft;
-                currentText.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 40);
-                _lobbyInfoTextList.Add(currentText);
-            });
-
-            _connectButton = GameObjectFactory.CreateCustomButton(lobbyInfoPanelFG.transform, Vector2.zero, Vector2.one * 50, "Connect", "ConnectButton", OnConnectLobbyButtonClick);
+                if (delay)
+                    Plugin.Instance.StartCoroutine(DelayDisplayLobbyInfo(i * .1f, _lobbyInfoList[i], DisplayLobbyInfo));
+                else
+                    DisplayLobbyInfo(_lobbyInfoList[i]);
+            }
+            _scrollingHandler.enabled = _lobbyInfoList.Count > 7;
+            _scrollingHandler.slider.value = 0;
         }
 
         public void OnHostLobbyButtonClick()
         {
             MultiplayerManager.UpdateMultiplayerState(MultiplayerState.CreatingLobby);
-            _createLobbyInfo = new SerializableClass.MultiplayerLobbyInfo()
-            {
-                id = _lobbyInfoList.Count,
-                maxPlayerCount = 16,
-                title = _lobbyNameTitle.text,
-                currentState = "",
-                users = new List<SerializableClass.MultiplayerUserInfo>()
-            };
+
             UpdateCreateLobbyInfo();
         }
 
@@ -309,42 +294,12 @@ namespace TootTally.Multiplayer
 
         public void UpdateCreateLobbyInfo()
         {
-            if (_lobbyInfoTextList.Count > 0)
-            {
-                _lobbyInfoTextList.ForEach(textObj => GameObject.DestroyImmediate(textObj.gameObject));
-                _lobbyInfoTextList.Clear();
-            }
-
-            if (_connectButton != null)
-                GameObject.DestroyImmediate(_connectButton.gameObject);
-
-            GameObject lobbyInfoPanelFG = _lobbyInfoPanel.transform.Find("panelfg").gameObject;
-
-            if (_createLobbyButton == null)
-                _createLobbyButton = GameObjectFactory.CreateCustomButton(lobbyInfoPanelFG.transform, Vector2.zero, Vector2.one * 50, "Create Lobby", "CreateLobbyButton", delegate { CreateNewLobby(_createLobbyInfo); });
-
-            var lobbyTitle = _lobbyTitleInputHolder.GetComponent<InputField>().text;
-            var lobbyPassword = _lobbyPasswordInputHolder.GetComponent<InputField>().text;
-
-            TMP_Text lobbyNameText = GameObjectFactory.CreateSingleText(lobbyInfoPanelFG.transform, $"CreateLobbyNameInfo", $"{lobbyTitle}", Color.white);
-            lobbyNameText.alignment = TextAlignmentOptions.MidlineLeft;
-            lobbyNameText.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 40);
-            _lobbyInfoTextList.Add(lobbyNameText);
-
-            TMP_Text lobbyPasswordText = GameObjectFactory.CreateSingleText(lobbyInfoPanelFG.transform, $"CreateLobbyPasswordInfo", $"{lobbyPassword}", Color.white);
-            lobbyPasswordText.alignment = TextAlignmentOptions.MidlineLeft;
-            lobbyPasswordText.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 40);
-            _lobbyInfoTextList.Add(lobbyPasswordText);
 
             UpdateLobbyInfoData();
         }
 
         public void UpdateLobbyInfoData()
         {
-            _createLobbyInfo.maxPlayerCount = _createLobbyMaxPlayerCount;
-            _createLobbyInfo.title = _lobbyTitleInputHolder.GetComponent<InputField>().text;
-            _createLobbyInfo.password = _lobbyPasswordInputHolder.GetComponent<InputField>().text;
-            _createLobbyInfo.currentState = "Waiting for players";
         }
 
         public void CreateNewLobby(SerializableClass.MultiplayerLobbyInfo lobbyInfo)
@@ -355,22 +310,12 @@ namespace TootTally.Multiplayer
 
         public void AnimateHomeScreenPanels()
         {
-            AnimationManager.AddNewSizeDeltaAnimation(_mainPanelFg, new Vector2(1240, 630), 0.8f, new EasingHelper.SecondOrderDynamics(1.75f, 1f, 0f));
-            AnimationManager.AddNewSizeDeltaAnimation(_mainPanelBorder, new Vector2(1250, 640), 0.8f, new EasingHelper.SecondOrderDynamics(1.75f, 1f, 0f), (sender) =>
-            {
-                AnimationManager.AddNewScaleAnimation(_titlePanel, Vector2.one, .8f, new EasingHelper.SecondOrderDynamics(1.75f, 1f, 0f));
-                AnimationManager.AddNewScaleAnimation(_activeLobbyPanel, Vector2.one, .8f, new EasingHelper.SecondOrderDynamics(1.75f, 1f, 0f));
 
-                AnimationManager.AddNewScaleAnimation(_buttonsPanel, Vector2.one, .8f, new EasingHelper.SecondOrderDynamics(1.75f, 1f, 0f));
-                AnimationManager.AddNewScaleAnimation(_lobbyInfoPanel, Vector2.one, .8f, new EasingHelper.SecondOrderDynamics(1.75f, 1f, 0f));
-
-                MultiplayerManager.UpdateMultiplayerState(MultiplayerState.Home);
-            });
         }
 
         public void EnterMainPanelAnimation()
         {
-            AnimationManager.AddNewPositionAnimation(_mainPanel, new Vector2(0, -20), 2f, new EasingHelper.SecondOrderDynamics(1.25f, 1f, 0f));
+
         }
 
         public void OnEnterState()
@@ -383,47 +328,24 @@ namespace TootTally.Multiplayer
 
         public void OnAcceptButtonClick()
         {
-            AnimationManager.AddNewSizeDeltaAnimation(_acceptButton, Vector2.zero, 1f, new EasingHelper.SecondOrderDynamics(1.75f, 1f, 0f));
-            AnimationManager.AddNewSizeDeltaAnimation(_declineButton, Vector2.zero, 1f, new EasingHelper.SecondOrderDynamics(1.75f, 1f, 0f), (sender) => DestroyFactTextTopBarAndAcceptDeclineButtons());
-            MultiplayerManager.UpdateMultiplayerState(MultiplayerState.LoadPanels);
-            _currentInstance.sfx_ok.Play();
+
         }
 
         public void OnDeclineButtonClick()
         {
             MultiplayerManager.UpdateMultiplayerState(MultiplayerState.ExitScene);
-            GameObject.Destroy(_mainPanel);
         }
 
         public void DestroyFactTextTopBarAndAcceptDeclineButtons()
         {
-            GameObject.DestroyImmediate(_mainPanelFg.transform.Find("FactText").gameObject);
-            GameObject.DestroyImmediate(_topBar);
-            if (_acceptButton != null)
-                GameObject.DestroyImmediate(_acceptButton);
-            if (_declineButton != null)
-                GameObject.DestroyImmediate(_declineButton);
+
         }
 
         public void OnExitAnimation()
         {
-            AnimationManager.AddNewScaleAnimation(_mainPanel, Vector2.zero, 2f, new EasingHelper.SecondOrderDynamics(.75f, 1f, 0f));
         }
 
-        public void AnimatePanelPositions(Vector2 newTitlePanelPosition, Vector2 newActiveLobbyPanelPosition, Vector2 newButtonsPanelPosition, Vector2 newLobbyInfoPanelPosition, Vector2 newCreateLobbyPanelPosition)
-        {
-            if (newTitlePanelPosition != null)
-                AnimationManager.AddNewPositionAnimation(_titlePanel, newTitlePanelPosition, 1.2f, new EasingHelper.SecondOrderDynamics(1.75f, 1f, 0f));
-            if (newActiveLobbyPanelPosition != null)
-                AnimationManager.AddNewPositionAnimation(_activeLobbyPanel, newActiveLobbyPanelPosition, 1.2f, new EasingHelper.SecondOrderDynamics(1.75f, 1f, 0f));
-            if (newButtonsPanelPosition != null)
-                AnimationManager.AddNewPositionAnimation(_buttonsPanel, newButtonsPanelPosition, 1.2f, new EasingHelper.SecondOrderDynamics(1.75f, 1f, 0f));
-            if (newLobbyInfoPanelPosition != null)
-                AnimationManager.AddNewPositionAnimation(_lobbyInfoPanel, newLobbyInfoPanelPosition, 1.2f, new EasingHelper.SecondOrderDynamics(1.75f, 1f, 0f));
-            if (newCreateLobbyPanelPosition != null)
-                AnimationManager.AddNewPositionAnimation(_createLobbyPanel, newCreateLobbyPanelPosition, 1.2f, new EasingHelper.SecondOrderDynamics(1.75f, 1f, 0f));
-        }
-
+        public static EasingHelper.SecondOrderDynamics GetSecondDegreeAnimation(float speedMult = 1f) => new EasingHelper.SecondOrderDynamics(speedMult, 0.75f, 1.15f);
 
         public enum MultiplayerState
         {

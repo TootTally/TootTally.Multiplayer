@@ -61,7 +61,6 @@ namespace TootTally.Multiplayer
                 else if (_state == MultiplayerController.MultiplayerState.Home)
                     UpdateMultiplayerState(MultiplayerController.MultiplayerState.ExitScene);
             }
-
         }
 
         [HarmonyPatch(typeof(PlaytestAnims), nameof(PlaytestAnims.nextScene))]
@@ -84,7 +83,7 @@ namespace TootTally.Multiplayer
 
             #region MultiplayerButton
             GameObject multiplayerButton = GameObject.Instantiate(__instance.btncontainers[(int)HomeScreenButtonIndexes.Collect], mainMenu.transform);
-            GameObject multiplayerHitbox = GameObject.Instantiate(mainMenu.transform.Find("Button2").gameObject, mainMenu.transform);
+            GameObject multiplayerHitbox = GameObject.Instantiate(mainMenu.transform.Find("Button1").gameObject, mainMenu.transform);
             GameObject multiplayerText = GameObject.Instantiate(__instance.paneltxts[(int)HomeScreenButtonIndexes.Collect], mainMenu.transform);
             multiplayerButton.name = "MULTIContainer";
             multiplayerHitbox.name = "MULTIButton";
@@ -208,13 +207,13 @@ namespace TootTally.Multiplayer
             #endregion
 
             #region hitboxes
-            GameObject buttonCollect = mainMenu.transform.Find("Button2").gameObject;
+            GameObject buttonCollect = mainMenu.transform.Find("Button1").gameObject;
             RectTransform buttonCollectTransform = buttonCollect.GetComponent<RectTransform>();
             buttonCollectTransform.anchoredPosition = new Vector2(739, 380);
             buttonCollectTransform.sizeDelta = new Vector2(320, 190);
             buttonCollectTransform.Rotate(0, 0, 15f);
 
-            GameObject buttonImprov = mainMenu.transform.Find("Button4").gameObject;
+            GameObject buttonImprov = mainMenu.transform.Find("Button3").gameObject;
             RectTransform buttonImprovTransform = buttonImprov.GetComponent<RectTransform>();
             buttonImprovTransform.anchoredPosition = new Vector2(310, 383);
             buttonImprovTransform.sizeDelta = new Vector2(450, 195);
@@ -256,23 +255,17 @@ namespace TootTally.Multiplayer
                     _multiController.OnEnterState();
                     break;
                 case MultiplayerController.MultiplayerState.FirstTimePopUp:
-                    _multiController.AddAcceptDeclineButtonsToPanelFG();
                     break;
                 case MultiplayerController.MultiplayerState.LoadPanels:
-                    _multiController.OnLoadPanelsScreensState();
                     _multiController.AnimateHomeScreenPanels();
                     break;
                 case MultiplayerController.MultiplayerState.Home:
-                    _multiController.AnimatePanelPositions(new Vector2(0, 284), new Vector2(-240, -28), new Vector2(402, 114), new Vector2(402, -170), new Vector2(1041, -28));
                     break;
                 case MultiplayerController.MultiplayerState.CreatingLobby:
-                    _multiController.AnimatePanelPositions(new Vector2(0, 284), new Vector2(-1047, -28), new Vector2(-405, 114), new Vector2(-405, -170), new Vector2(234, -28));
                     break;
                 case MultiplayerController.MultiplayerState.Lobby:
-                    _multiController.AnimatePanelPositions(new Vector2(0, 912), new Vector2(-240, 600), new Vector2(402, 742), new Vector2(402, 458), new Vector2(1041, 600));
                     break;
                 case MultiplayerController.MultiplayerState.Hosting:
-                    _multiController.AnimatePanelPositions(new Vector2(0, 284), new Vector2(-1047, -28), new Vector2(-405, 114), new Vector2(-405, -170), new Vector2(234, -28));
                     break;
                 case MultiplayerController.MultiplayerState.SelectSong:
                     SceneManager.LoadScene("levelselect");
