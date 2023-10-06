@@ -220,7 +220,8 @@ namespace TootTally.Multiplayer
             var t1 = GameObjectFactory.CreateSingleText(test.transform, "LobbyName", lobbyInfo.name, Color.white);
             var t2 = GameObjectFactory.CreateSingleText(test.transform, "LobbyState", lobbyInfo.currentState, Color.white);
             t1.alignment = t2.alignment = TextAlignmentOptions.Left;
-            GameObjectFactory.CreateSingleText(lobbyInfoContainer.transform, "LobbyTitle", $"{lobbyInfo.title}", Color.white);
+            var t5 = GameObjectFactory.CreateSingleText(lobbyInfoContainer.transform, "LobbyTitle", $"{lobbyInfo.title}", Color.white);
+            t5.alignment = TextAlignmentOptions.Right;
             var test2 = GameObject.Instantiate(MultiplayerAssetManager.GetPrefab("containerboxvertical"), lobbyInfoContainer.transform);
             var t3 = GameObjectFactory.CreateSingleText(test2.transform, "LobbyCount", $"{lobbyInfo.users.Count}/{lobbyInfo.maxPlayerCount}", Color.white);
             var t4 = GameObjectFactory.CreateSingleText(test2.transform, "LobbyPing", $"{lobbyInfo.ping}ms", Color.white);
@@ -232,6 +233,7 @@ namespace TootTally.Multiplayer
         {
             _lobbyPlayerListText.text = "<u>Player List</u>\n";
             lobbyInfo.users.ForEach(u => _lobbyPlayerListText.text += $"{u.username}\n");
+            _currentInstance.sfx_hover.Play();
         }
 
         public void OnMouseExitClearLobbyDetails()
@@ -260,6 +262,7 @@ namespace TootTally.Multiplayer
             _connectButton.transform.localScale = Vector2.zero;
             _connectButton.gameObject.GetComponent<RectTransform>().pivot = Vector2.one / 2f;
             _connectButtonScaleAnimation = AnimationManager.AddNewScaleAnimation(_connectButton.gameObject, Vector3.one, 1f, new EasingHelper.SecondOrderDynamics(2.5f, 0.98f, 1.1f));
+            _currentInstance.sfx_hover.Play();
         }
 
         public void OnConnectButtonClick()
