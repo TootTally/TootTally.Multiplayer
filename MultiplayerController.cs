@@ -9,6 +9,7 @@ using TootTally.Utils.Helpers;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace TootTally.Multiplayer
 {
@@ -19,12 +20,15 @@ namespace TootTally.Multiplayer
         private static List<SerializableClass.MultiplayerLobbyInfo> _lobbyInfoList;
         private static List<GameObject> _lobbyInfoRowsList;
 
+        private static GameObject _currentActivePanel;
+        private static bool _isTransitioning;
+
+        #region main
         private static GameObject _canvas, _mainPanel, _lobbyInfoContainer, _lobbyDetailContainer, _lobbyConnectContainer;
         private static ScrollableSliderHandler _scrollingHandler;
 
         private static TMP_Text _lobbyPlayerListText;
 
-        private static SerializableClass.MultiplayerLobbyInfo _createLobbyInfo;
         private static CustomButton _connectButton, _createLobbyButton;
         private static CustomAnimation _connectButtonScaleAnimation;
 
@@ -32,6 +36,15 @@ namespace TootTally.Multiplayer
 
         private static SerializableClass.MultiplayerLobbyInfo _selectedLobby;
         private static GameObject _selectedLobbyContainer;
+        #endregion
+
+        #region lobby
+        private static GameObject _lobbyPanel, _lobbyUserContainer;
+
+        private static CustomButton _lobbyPanelBackButton;
+        #endregion
+
+
 
         #region LocalTesting
         private static readonly SerializableClass.MultiplayerUserInfo _gristUser = new SerializableClass.MultiplayerUserInfo()
@@ -76,6 +89,14 @@ namespace TootTally.Multiplayer
             username = "Jampot",
             state = "Host (Song Select)"
         };
+        private static readonly SerializableClass.MultiplayerUserInfo _betaUser = new SerializableClass.MultiplayerUserInfo()
+        {
+            id = 5,
+            country = "SANS",
+            rank = 69,
+            username = "SierraBeta",
+            state = "Sansing"
+        };
         #endregion
 
         public MultiplayerController(PlaytestAnims __instance)
@@ -87,6 +108,8 @@ namespace TootTally.Multiplayer
             Transform panelTransform = canvasWindow.transform.Find("Panel");
 
             _canvas = GameObject.Instantiate(MultiplayerAssetManager.GetPrefab("multiplayercanvas"));
+
+            #region main
             _mainPanel = _canvas.transform.Find("MainPanelBG").gameObject;
             _mainPanel.transform.localScale = Vector2.zero;
 
@@ -121,11 +144,23 @@ namespace TootTally.Multiplayer
             connectLayout.childControlHeight = connectLayout.childControlWidth = false;
             connectLayout.childAlignment = TextAnchor.MiddleCenter;
 
-            _connectButton = GameObjectFactory.CreateCustomButton(_lobbyConnectContainer.transform, Vector2.zero, new Vector2(150, 50), "Connect", "LobbyConnectButton");
+            _createLobbyButton = GameObjectFactory.CreateCustomButton(_lobbyConnectContainer.transform, Vector2.zero, new Vector2(150, 75), "Create", "LobbyCreateButton", OnCreateLobbyButtonClick);
+
+            _connectButton = GameObjectFactory.CreateCustomButton(_lobbyConnectContainer.transform, Vector2.zero, new Vector2(150, 75), "Connect", "LobbyConnectButton", OnConnectButtonClick);
             _connectButton.gameObject.SetActive(false);
 
             _lobbyInfoList = new List<SerializableClass.MultiplayerLobbyInfo>();
             _lobbyInfoRowsList = new List<GameObject>();
+            #endregion
+
+            #region lobby
+            _lobbyPanel = _canvas.transform.Find("LobbyPanelBG").gameObject;
+            var topContainer = _lobbyPanel.transform.Find("LobbyPanelFG/TopMain/TopMainContainer");
+            _lobbyPanelBackButton = GameObjectFactory.CreateCustomButton(topContainer.transform, Vector2.zero, new Vector2(150, 75), "Back", "LobbyBackButton", OnLobbyBackButtonClick);
+            _lobbyUserContainer =  _lobbyPanel.transform.Find("LobbyPanelFG/BottomMain/LeftPanel/LeftPanelContainer").gameObject;
+            #endregion
+
+            _currentActivePanel = _mainPanel;
 
             GetLobbyInfo();
             AnimationManager.AddNewScaleAnimation(_mainPanel, Vector3.one, 1f, GetSecondDegreeAnimation(1.5f), (sender) => UpdateLobbyInfo(true));
@@ -177,6 +212,17 @@ namespace TootTally.Multiplayer
                 ping = 224f,
                 users = new List<SerializableClass.MultiplayerUserInfo> { _gloomhonkUser }
             });
+            _lobbyInfoList.Add(new SerializableClass.MultiplayerLobbyInfo()
+            {
+                id = 5,
+                name = "TestMulti5",
+                title = "SierraBeta's Undertale Songs",
+                password = "dododado",
+                maxPlayerCount = 69,
+                currentState = "Playing: Megalovania",
+                ping = -5f,
+                users = new List<SerializableClass.MultiplayerUserInfo> { _betaUser, _electrUser, _jampotUser, _lumpytfUser, _gloomhonkUser, _gristUser }
+            });
         }
 
         private static void OnSliderValueChangeScrollContainer(GameObject container, float value)
@@ -187,9 +233,9 @@ namespace TootTally.Multiplayer
 
         public void RefreshAllLobbyInfo()
         {
-            _lobbyInfoRowsList.ForEach(row => GameObject.DestroyImmediate(row));
+            _lobbyInfoRowsList.ForEach(GameObject.DestroyImmediate);
             _lobbyInfoRowsList.Clear();
-
+            UpdateLobbyInfo(true);
         }
 
         private IEnumerator<WaitForSeconds> DelayDisplayLobbyInfo(float delay, SerializableClass.MultiplayerLobbyInfo lobby, Action<SerializableClass.MultiplayerLobbyInfo> callback)
@@ -198,9 +244,10 @@ namespace TootTally.Multiplayer
             callback(lobby);
         }
 
-        public void DisplayLobbyInfo(SerializableClass.MultiplayerLobbyInfo lobbyInfo)
+        public void DisplayLobbyInfoInMainPanel(SerializableClass.MultiplayerLobbyInfo lobbyInfo)
         {
             var lobbyInfoContainer = GameObject.Instantiate(MultiplayerAssetManager.GetPrefab("containerboxhorizontal"), _lobbyInfoContainer.transform);
+            _lobbyInfoRowsList.Add(lobbyInfoContainer);
             var button = lobbyInfoContainer.AddComponent<EventTrigger>();
 
             EventTrigger.Entry pointerEnterEvent = new EventTrigger.Entry();
@@ -227,6 +274,17 @@ namespace TootTally.Multiplayer
             var t4 = GameObjectFactory.CreateSingleText(test2.transform, "LobbyPing", $"{lobbyInfo.ping}ms", Color.white);
             t3.alignment = t4.alignment = TextAlignmentOptions.Right;
             AnimationManager.AddNewEulerAngleAnimation(lobbyInfoContainer, new Vector3(25, 25, 0), 2f, new EasingHelper.SecondOrderDynamics(1.25f, 1f, 1f));
+        }
+
+        public void DisplayUserInfo(SerializableClass.MultiplayerUserInfo user)
+        {
+            var lobbyInfoContainer = GameObject.Instantiate(MultiplayerAssetManager.GetPrefab("containerboxhorizontal"), _lobbyUserContainer.transform);
+            lobbyInfoContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 75);
+
+            var t1 = GameObjectFactory.CreateSingleText(lobbyInfoContainer.transform, $"Lobby{user.username}Name", $"{user.username}", Color.white);
+            t1.alignment = TextAlignmentOptions.Left;
+            var t2 = GameObjectFactory.CreateSingleText(lobbyInfoContainer.transform, $"Lobby{user.username}Rank", $"#{user.rank}", Color.white);
+            t2.alignment = TextAlignmentOptions.Right;
         }
 
         public void OnMouseEnterDisplayLobbyDetails(SerializableClass.MultiplayerLobbyInfo lobbyInfo, GameObject lobbyContainer) //TODO: Add small outline to hovered lobby
@@ -268,6 +326,10 @@ namespace TootTally.Multiplayer
         public void OnConnectButtonClick()
         {
             if (_selectedLobby == null) return;
+
+            MultiplayerManager.UpdateMultiplayerState(MultiplayerState.Lobby);
+            TransitionPanels(_lobbyPanel);
+            _selectedLobby.users.ForEach(DisplayUserInfo);
         }
 
         public void UpdateLobbyInfo(bool delay)
@@ -275,35 +337,48 @@ namespace TootTally.Multiplayer
             for (int i = 0; i < _lobbyInfoList.Count; i++)
             {
                 if (delay)
-                    Plugin.Instance.StartCoroutine(DelayDisplayLobbyInfo(i * .1f, _lobbyInfoList[i], DisplayLobbyInfo));
+                    Plugin.Instance.StartCoroutine(DelayDisplayLobbyInfo(i * .1f, _lobbyInfoList[i], DisplayLobbyInfoInMainPanel));
                 else
-                    DisplayLobbyInfo(_lobbyInfoList[i]);
+                    DisplayLobbyInfoInMainPanel(_lobbyInfoList[i]);
             }
             _scrollingHandler.enabled = _lobbyInfoList.Count > 7;
             _scrollingHandler.slider.value = 0;
         }
 
-        public void OnHostLobbyButtonClick()
-        {
-            MultiplayerManager.UpdateMultiplayerState(MultiplayerState.CreatingLobby);
-
-            UpdateCreateLobbyInfo();
-        }
-
         public void OnConnectLobbyButtonClick()
         {
-            MultiplayerManager.UpdateMultiplayerState(MultiplayerState.Lobby);
         }
 
-        public void UpdateCreateLobbyInfo()
-        {
-
-            UpdateLobbyInfoData();
-        }
 
         public void UpdateLobbyInfoData()
         {
         }
+
+        public void OnCreateLobbyButtonClick()
+        {
+            _scrollingHandler.enabled = false;
+            MultiplayerManager.UpdateMultiplayerState(MultiplayerState.CreatingLobby);
+            TransitionPanels(_lobbyPanel);
+        }
+
+        public void OnLobbyBackButtonClick()
+        {
+            _scrollingHandler.enabled = _lobbyInfoList.Count > 7;
+            TransitionPanels(_mainPanel);
+        }
+
+        public void TransitionPanels(GameObject nextPanel)
+        {
+            if (_currentActivePanel == nextPanel || _isTransitioning) return;
+
+            _isTransitioning = true;
+            var previousPanel = _currentActivePanel;
+            AnimationManager.AddNewPositionAnimation(_currentActivePanel, new Vector2(2000, 0), 0.9f, new EasingHelper.SecondOrderDynamics(1.5f, 0.89f, 1.1f), delegate { previousPanel.SetActive(false); previousPanel.GetComponent<RectTransform>().anchoredPosition = new Vector2(2000, 0); });
+            nextPanel.SetActive(true);
+            _currentActivePanel = nextPanel;
+            AnimationManager.AddNewPositionAnimation(nextPanel, Vector2.zero, 0.9f, new EasingHelper.SecondOrderDynamics(1.5f, 0.89f, 1.1f), (sender) => _isTransitioning = false);
+        }
+
 
         public void CreateNewLobby(SerializableClass.MultiplayerLobbyInfo lobbyInfo)
         {
