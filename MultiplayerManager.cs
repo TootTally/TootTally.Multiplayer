@@ -32,6 +32,7 @@ namespace TootTally.Multiplayer
         [HarmonyPostfix]
         public static void ChangePlayTestToMultiplayerScreen(PlaytestAnims __instance)
         {
+            MultiplayerGameObjectFactory.Initialize();
             _currentInstance = __instance;
             _multiController = new MultiplayerController(__instance);
 
@@ -73,7 +74,6 @@ namespace TootTally.Multiplayer
         [HarmonyPostfix]
         public static void OnHomeControllerStartPostFixAddMultiplayerButton(HomeController __instance)
         {
-
             GameObject mainCanvas = GameObject.Find("MainCanvas").gameObject;
             GameObject mainMenu = mainCanvas.transform.Find("MainMenu").gameObject;
 

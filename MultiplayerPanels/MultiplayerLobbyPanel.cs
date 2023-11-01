@@ -32,6 +32,8 @@ namespace TootTally.Multiplayer.MultiplayerPanels
             _selectSongButton = GameObjectFactory.CreateCustomButton(bottomPanelContainer.transform, Vector2.zero, new Vector2(150, 75), "SelectSong", "SelectSongButton", OnSelectSongButtonClick);
         }
 
+        public void DIsplayAllUserInfo(List<SerializableClass.MultiplayerUserInfo> users) => users.ForEach(DisplayUserInfo);
+
         public void DisplayUserInfo(SerializableClass.MultiplayerUserInfo user)
         {
             var lobbyInfoContainer = GameObject.Instantiate(MultiplayerAssetManager.GetPrefab("containerboxhorizontal"), lobbyUserContainer.transform);
@@ -53,7 +55,7 @@ namespace TootTally.Multiplayer.MultiplayerPanels
         public void OnBackButtonClick()
         {
             ClearAllUserRows();
-            controller.ReturnToLobby();
+            controller.ReturnToLastPanel();
         }
 
         public void OnSelectSongButtonClick()

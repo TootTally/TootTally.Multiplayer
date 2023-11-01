@@ -41,6 +41,7 @@ namespace TootTally.Multiplayer
 
         public void UnloadModule()
         {
+            MultiplayerAssetManager.Dispose();
             Harmony.UnpatchID(PluginInfo.PLUGIN_GUID);
             LogInfo($"Module unloaded!");
         }

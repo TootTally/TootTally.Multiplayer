@@ -121,16 +121,16 @@ namespace TootTally.Multiplayer.MultiplayerPanels
         {
             _lobbyPlayerListText.text = "<u>Player List</u>\n";
             lobbyInfo.users.ForEach(u => _lobbyPlayerListText.text += $"{u.username}\n");
-            controller.GetInstance.sfx_hover.Play();
 
             if (_selectedLobbyContainer == null || (_hoveredLobbyContainer != lobbyContainer && lobbyContainer != _selectedLobbyContainer))
             {
+                controller.GetInstance.sfx_hover.Play();
                 _hoveredLobbyContainer = lobbyContainer;
                 var outline = _hoveredLobbyContainer.AddComponent<Outline>();
                 outline.effectColor = new Color(.8f, .8f, .95f);
                 outline.effectDistance = Vector2.one * 5f;
             }
-            
+
         }
 
         public void OnMouseExitClearLobbyDetails()
@@ -161,15 +161,21 @@ namespace TootTally.Multiplayer.MultiplayerPanels
             _hoveredLobbyContainer = null;
 
             _connectButtonScaleAnimation?.Dispose();
-            _connectButton.gameObject.SetActive(true);
-            _connectButton.transform.localScale = Vector2.zero;
-            _connectButton.gameObject.GetComponent<RectTransform>().pivot = Vector2.one / 2f;
-            _connectButtonScaleAnimation = AnimationManager.AddNewScaleAnimation(_connectButton.gameObject, Vector3.one, 1f, new EasingHelper.SecondOrderDynamics(2.5f, 0.98f, 1.1f));
-            controller.GetInstance.sfx_hover.Play();
+
+            if (lobbyInfo.users.Count < lobbyInfo.maxPlayerCount)
+            {
+                _connectButton.gameObject.SetActive(true);
+                _connectButton.transform.localScale = Vector2.zero;
+                _connectButton.gameObject.GetComponent<RectTransform>().pivot = Vector2.one / 2f;
+                _connectButtonScaleAnimation = AnimationManager.AddNewScaleAnimation(_connectButton.gameObject, Vector3.one, 1f, new EasingHelper.SecondOrderDynamics(2.5f, 0.98f, 1.1f));
+                controller.GetInstance.sfx_hover.Play();
+            }
+
         }
 
         public void ClearAllLobby()
         {
+            _selectedLobby = null; _selectedLobbyContainer = null; _hoveredLobbyContainer = null;
             _lobbyInfoRowsList.ForEach(GameObject.DestroyImmediate);
             _lobbyInfoRowsList.Clear();
         }
@@ -177,13 +183,7 @@ namespace TootTally.Multiplayer.MultiplayerPanels
         public void OnCreateLobbyButtonClick()
         {
             _scrollingHandler.enabled = false;
-            controller.CreateNewLobby(new SerializableClass.MultiplayerLobbyInfo()); //TODO
-        }
-
-        public void OnLobbyBackButtonClick()
-        {
-            _scrollingHandler.enabled = _lobbyInfoRowsList.Count > 7;
-            controller.ReturnToLobby();
+            controller.MoveToCreate();
         }
 
         public void OnConnectButtonClick()

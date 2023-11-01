@@ -15,11 +15,15 @@ namespace TootTally.Multiplayer
 
         private static List<SerializableClass.MultiplayerLobbyInfo> _lobbyInfoList;
 
-        private GameObject _currentActivePanel;
+        private MultiplayerPanelBase _currentActivePanel, _lastPanel;
+        private Vector2 _lastPosition;
         private bool _isTransitioning;
 
         private MultiplayerMainPanel _multMainPanel;
         private MultiplayerLobbyPanel _multLobbyPanel;
+        private MultiplayerCreatePanel _multCreatePanel;
+
+        private int _currentLobbyIndex;
 
         #region LocalTesting
         private static readonly SerializableClass.MultiplayerUserInfo _gristUser = new SerializableClass.MultiplayerUserInfo()
@@ -31,7 +35,7 @@ namespace TootTally.Multiplayer
             state = "Ready"
         };
 
-        private static readonly SerializableClass.MultiplayerUserInfo _electroUser = new SerializableClass.MultiplayerUserInfo()
+        public static readonly SerializableClass.MultiplayerUserInfo _electroUser = new SerializableClass.MultiplayerUserInfo() //Temporary public for testing
         {
             id = 1,
             country = "CAD",
@@ -92,25 +96,47 @@ namespace TootTally.Multiplayer
 
             var canvas = GameObject.Instantiate(MultiplayerAssetManager.GetPrefab("multiplayercanvas"));
 
-            _multMainPanel = new MultiplayerMainPanel(canvas, this);
-            _multLobbyPanel = new MultiplayerLobbyPanel(canvas, this);
+            try
+            {
+                _multMainPanel = new MultiplayerMainPanel(canvas, this);
+            }
+            catch (Exception)
+            {
+                Plugin.Instance.LogError("Couldn't init main panel");
+            }
+            try
+            {
+                _multLobbyPanel = new MultiplayerLobbyPanel(canvas, this);
+            }
+            catch (Exception)
+            {
+                Plugin.Instance.LogError("Couldn't init lobby panel");
+            }
+            try
+            {
+                _multCreatePanel = new MultiplayerCreatePanel(canvas, this);
+            }
+            catch (Exception)
+            {
+                Plugin.Instance.LogError("Couldn't init create panel");
+            }
 
             if (_lobbyInfoList == null)
             {
                 _lobbyInfoList = new List<SerializableClass.MultiplayerLobbyInfo>();
-                GetLobbyInfo();
+                _currentLobbyIndex = 0;
+                AddLocalLobbyData();
             }
 
-            _currentActivePanel = _multMainPanel.panel;
+            _currentActivePanel = _multMainPanel;
 
             AnimationManager.AddNewScaleAnimation(_multMainPanel.panel, Vector3.one, 1f, GetSecondDegreeAnimation(1.5f), (sender) => UpdateLobbyInfo(true));
         }
 
-        public void GetLobbyInfo()
+        public void AddLocalLobbyData()
         {
-            _lobbyInfoList.Add(new SerializableClass.MultiplayerLobbyInfo()
+            CreateNewLobby(new SerializableClass.MultiplayerLobbyInfo()
             {
-                id = 1,
                 name = "TestMulti1",
                 title = "gristCollector's Lobby",
                 password = "",
@@ -118,10 +144,9 @@ namespace TootTally.Multiplayer
                 currentState = "Playing: Never gonna give you up",
                 ping = 69f,
                 users = new List<SerializableClass.MultiplayerUserInfo> { _gristUser }
-            });
-            _lobbyInfoList.Add(new SerializableClass.MultiplayerLobbyInfo()
+            },
+            new SerializableClass.MultiplayerLobbyInfo()
             {
-                id = 2,
                 name = "TestMulti2",
                 title = "Electrostats's Lobby",
                 password = "RocketLeague",
@@ -129,10 +154,9 @@ namespace TootTally.Multiplayer
                 currentState = "Playing: Taps",
                 ping = 1f,
                 users = new List<SerializableClass.MultiplayerUserInfo> { _electroUser, _jampotUser }
-            });
-            _lobbyInfoList.Add(new SerializableClass.MultiplayerLobbyInfo()
+            },
+            new SerializableClass.MultiplayerLobbyInfo()
             {
-                id = 3,
                 name = "TestMulti3",
                 title = "Lumpytf's private room",
                 password = "",
@@ -140,10 +164,9 @@ namespace TootTally.Multiplayer
                 currentState = "Selecting Song",
                 ping = 12f,
                 users = new List<SerializableClass.MultiplayerUserInfo> { _lumpytfUser }
-            });
-            _lobbyInfoList.Add(new SerializableClass.MultiplayerLobbyInfo()
+            },
+            new SerializableClass.MultiplayerLobbyInfo()
             {
-                id = 4,
                 name = "TestMulti4",
                 title = "GloomHonk's Meme songs",
                 password = "420blazeit",
@@ -151,10 +174,9 @@ namespace TootTally.Multiplayer
                 currentState = "Playing: tt is love tt is life",
                 ping = 224f,
                 users = new List<SerializableClass.MultiplayerUserInfo> { _gloomhonkUser }
-            });
-            _lobbyInfoList.Add(new SerializableClass.MultiplayerLobbyInfo()
+            },
+            new SerializableClass.MultiplayerLobbyInfo()
             {
-                id = 5,
                 name = "TestMulti5",
                 title = "SierraBeta's Undertale Songs",
                 password = "dododado",
@@ -162,10 +184,9 @@ namespace TootTally.Multiplayer
                 currentState = "Playing: Megalovania",
                 ping = -5f,
                 users = new List<SerializableClass.MultiplayerUserInfo> { _betaUser, _electroUser, _jampotUser, _lumpytfUser, _gloomhonkUser, _gristUser }
-            });
-            _lobbyInfoList.Add(new SerializableClass.MultiplayerLobbyInfo()
+            },
+            new SerializableClass.MultiplayerLobbyInfo()
             {
-                id = 5,
                 name = "TestMulti6",
                 title = "RunDom's trolleries",
                 password = "HappyBirthdayElectro",
@@ -203,13 +224,29 @@ namespace TootTally.Multiplayer
         public void ConnectToLobby(SerializableClass.MultiplayerLobbyInfo lobby)
         {
             MultiplayerManager.UpdateMultiplayerState(MultiplayerState.Lobby);
-            TransitionPanels(_multLobbyPanel.panel, new Vector2(-2000, 0));
-            lobby.users.ForEach(_multLobbyPanel.DisplayUserInfo);
+            MoveToLobby();
+            _multLobbyPanel.DIsplayAllUserInfo(lobby.users);
         }
 
-        public void ReturnToLobby()
+
+        public void MoveToCreate()
         {
-            TransitionPanels(_multMainPanel.panel, new Vector2(2000, 0));
+            TransitionToPanel(_multCreatePanel);
+        }
+
+        public void MoveToLobby()
+        {
+            TransitionToPanel(_multLobbyPanel);
+        }
+
+        public void MoveToMain()
+        {
+            TransitionToPanel(_multMainPanel);
+        }
+
+        public void ReturnToLastPanel()
+        {
+            TransitionToPanel(_lastPanel);
         }
 
         public void RefreshAllLobbyInfo()
@@ -218,24 +255,28 @@ namespace TootTally.Multiplayer
             UpdateLobbyInfo(true);
         }
 
-        public void CreateNewLobby(SerializableClass.MultiplayerLobbyInfo lobbyInfo)
+        public void CreateNewLobby(params SerializableClass.MultiplayerLobbyInfo[] lobbyInfo)
         {
-            _lobbyInfoList.Add(lobbyInfo);
-            RefreshAllLobbyInfo();
-            MultiplayerManager.UpdateMultiplayerState(MultiplayerState.CreatingLobby);
-            TransitionPanels(_multLobbyPanel.panel, new Vector2(-2000, 0));
+            if (lobbyInfo == null || lobbyInfo.Length == 0) return;
+
+            for (int i = 0; i < lobbyInfo.Length; i++)
+            {
+                lobbyInfo[i].id = _currentLobbyIndex++;
+            }
+            _lobbyInfoList.AddRange(lobbyInfo);
         }
 
-        public void TransitionPanels(GameObject nextPanel, Vector2 positionOut)
+        public void TransitionToPanel(MultiplayerPanelBase nextPanel)
         {
             if (_currentActivePanel == nextPanel || _isTransitioning) return;
 
             _isTransitioning = true;
-            var previousPanel = _currentActivePanel;
-            AnimationManager.AddNewPositionAnimation(_currentActivePanel, positionOut, 0.9f, new EasingHelper.SecondOrderDynamics(1.5f, 0.89f, 1.1f), delegate { previousPanel.SetActive(false); previousPanel.GetComponent<RectTransform>().anchoredPosition = positionOut; });
-            nextPanel.SetActive(true);
+            _lastPanel = _currentActivePanel;
+            var positionOut = -nextPanel.GetPanelPosition;
+            AnimationManager.AddNewPositionAnimation(_currentActivePanel.panel, positionOut, 0.9f, new EasingHelper.SecondOrderDynamics(1.5f, 0.89f, 1.1f), delegate { _lastPanel.panel.SetActive(false); _lastPanel.panel.GetComponent<RectTransform>().anchoredPosition = positionOut; });
+            nextPanel.panel.SetActive(true);
             _currentActivePanel = nextPanel;
-            AnimationManager.AddNewPositionAnimation(nextPanel, Vector2.zero, 0.9f, new EasingHelper.SecondOrderDynamics(1.5f, 0.89f, 1.1f), (sender) => _isTransitioning = false);
+            AnimationManager.AddNewPositionAnimation(nextPanel.panel, Vector2.zero, 0.9f, new EasingHelper.SecondOrderDynamics(1.5f, 0.89f, 1.1f), (sender) => _isTransitioning = false);
         }
 
         public void OnDeclineButtonClick()
@@ -263,5 +304,6 @@ namespace TootTally.Multiplayer
             SelectSong,
             ExitScene,
         }
+
     }
 }

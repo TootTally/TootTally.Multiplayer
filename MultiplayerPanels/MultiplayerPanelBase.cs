@@ -6,6 +6,7 @@ namespace TootTally.Multiplayer.MultiplayerPanels
     {
         public MultiplayerController controller;
         public GameObject canvas, panel, panelFG;
+        public Vector2 GetPanelPosition => panel.GetComponent<RectTransform>().anchoredPosition;
 
         public MultiplayerPanelBase(GameObject canvas, MultiplayerController controller, string name)
         {
