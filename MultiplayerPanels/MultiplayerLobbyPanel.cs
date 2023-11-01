@@ -18,9 +18,13 @@ namespace TootTally.Multiplayer.MultiplayerPanels
         private CustomButton _backButton;
         public MultiplayerLobbyPanel(GameObject canvas, MultiplayerController controller) : base(canvas, controller, "LobbyPanel")
         {
+            Plugin.Instance.LogInfo("A");
             lobbyUserContainer = panelFG.transform.Find("TopMain/LeftPanel/LeftPanelContainer").gameObject;
+            Plugin.Instance.LogInfo("B");
             rightPanelContainer = panelFG.transform.Find("TopMain/RightPanel/RightPanelContainer").gameObject;
-            rightPanelContainerBox = rightPanelContainer.transform.Find("COntainerBoxVertical").gameObject;
+            Plugin.Instance.LogInfo("C");
+            rightPanelContainerBox = rightPanelContainer.transform.Find("ContainerBoxVertical").gameObject;
+            Plugin.Instance.LogInfo("D");
             bottomPanelContainer = panelFG.transform.Find("BottomMain/BottomMainContainer").gameObject;
 
             _backButton = GameObjectFactory.CreateCustomButton(bottomPanelContainer.transform, Vector2.zero, new Vector2(150, 75), "Back", "LobbyBackButton", controller.ReturnToLobby);

@@ -19,7 +19,7 @@ namespace TootTally.Multiplayer.MultiplayerPanels
     public class MultiplayerMainPanel : MultiplayerPanelBase
     {
         public GameObject topPanelContainer;
-        public GameObject bottomLeftPanelContainer, lobbyInfoContainer, lobbyConnectContainer;
+        public GameObject lobbyListContainer, lobbyInfoContainer, lobbyConnectContainer;
         private List<GameObject> _lobbyInfoRowsList;
 
         private Slider _slider;
@@ -38,7 +38,7 @@ namespace TootTally.Multiplayer.MultiplayerPanels
         public MultiplayerMainPanel(GameObject canvas, MultiplayerController controller) : base(canvas, controller, "MainPanel")
         {
             topPanelContainer = panelFG.transform.Find("TopMain/TopMainContainer").gameObject;
-            bottomLeftPanelContainer = panelFG.transform.Find("BottomMain/LeftPanel/LeftPanelContainer").gameObject;
+            lobbyListContainer = panelFG.transform.Find("BottomMain/LeftPanel/LeftPanelContainer").gameObject;
             lobbyInfoContainer = panelFG.transform.Find("BottomMain/RightPanel/TopContainer").gameObject;
             lobbyConnectContainer = panelFG.transform.Find("BottomMain/RightPanel/BottomContainer").gameObject;
 
@@ -59,7 +59,7 @@ namespace TootTally.Multiplayer.MultiplayerPanels
 
             _slider = new GameObject("ContainerSlider", typeof(Slider)).GetComponent<Slider>();
             _slider.gameObject.SetActive(true);
-            _slider.onValueChanged.AddListener((value) => controller.OnSliderValueChangeScrollContainer(lobbyInfoContainer, value));
+            _slider.onValueChanged.AddListener((value) => controller.OnSliderValueChangeScrollContainer(lobbyListContainer, value));
             _scrollingHandler = _slider.gameObject.AddComponent<ScrollableSliderHandler>();
             _scrollingHandler.enabled = false;
 
@@ -80,7 +80,7 @@ namespace TootTally.Multiplayer.MultiplayerPanels
 
         public void DisplayLobby(SerializableClass.MultiplayerLobbyInfo lobbyInfo)
         {
-            var lobbyContainer = GameObject.Instantiate(MultiplayerAssetManager.GetPrefab("containerboxhorizontal"), lobbyInfoContainer.transform);
+            var lobbyContainer = GameObject.Instantiate(MultiplayerAssetManager.GetPrefab("containerboxhorizontal"), lobbyListContainer.transform);
             _lobbyInfoRowsList.Add(lobbyContainer);
             var button = lobbyContainer.AddComponent<EventTrigger>();
 
