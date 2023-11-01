@@ -1,0 +1,18 @@
+﻿using UnityEngine;
+
+namespace TootTally.Multiplayer.MultiplayerPanels
+{
+    public abstract class MultiplayerPanelBase
+    {
+        public MultiplayerController controller;
+        public GameObject canvas, panel, panelFG;
+
+        public MultiplayerPanelBase(GameObject canvas, MultiplayerController controller, string name)
+        {
+            this.canvas = canvas;
+            this.controller = controller;
+            panel = canvas.transform.Find($"{name}BG").gameObject;
+            panelFG = panel.transform.Find($"{name}FG").gameObject;
+        }
+    }
+}
