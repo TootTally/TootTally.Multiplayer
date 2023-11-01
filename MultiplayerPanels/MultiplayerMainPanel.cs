@@ -123,7 +123,7 @@ namespace TootTally.Multiplayer.MultiplayerPanels
             lobbyInfo.users.ForEach(u => _lobbyPlayerListText.text += $"{u.username}\n");
             controller.GetInstance.sfx_hover.Play();
 
-            if (_selectedLobbyContainer == null || (_hoveredLobbyContainer != lobbyContainer && _hoveredLobbyContainer != _selectedLobbyContainer))
+            if (_selectedLobbyContainer == null || (_hoveredLobbyContainer != lobbyContainer && lobbyContainer != _selectedLobbyContainer))
             {
                 _hoveredLobbyContainer = lobbyContainer;
                 var outline = _hoveredLobbyContainer.AddComponent<Outline>();
@@ -140,7 +140,7 @@ namespace TootTally.Multiplayer.MultiplayerPanels
             else
                 _lobbyPlayerListText.text = "";
 
-            if (_hoveredLobbyContainer != null && _hoveredLobbyContainer != _selectedLobbyContainer)
+            if (_hoveredLobbyContainer != null)
                 GameObject.DestroyImmediate(_hoveredLobbyContainer.GetComponent<Outline>());
             _hoveredLobbyContainer = null;
         }
@@ -153,7 +153,7 @@ namespace TootTally.Multiplayer.MultiplayerPanels
                 GameObject.DestroyImmediate(_selectedLobbyContainer.GetComponent<Outline>());
 
             _selectedLobby = lobbyInfo;
-            _selectedLobbyContainer = lobbyContainer;
+            _selectedLobbyContainer = _hoveredLobbyContainer;
 
             var outline = _hoveredLobbyContainer.GetComponent<Outline>();
             outline.effectColor = new Color(1, 0, 0);
