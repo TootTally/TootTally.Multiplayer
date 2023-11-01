@@ -32,18 +32,14 @@ namespace TootTally.Multiplayer
         [HarmonyPostfix]
         public static void ChangePlayTestToMultiplayerScreen(PlaytestAnims __instance)
         {
-            if (_multiController != null)
-            {
-                if (_state == MultiplayerController.MultiplayerState.SelectSong)
-                    UpdateMultiplayerState(MultiplayerController.MultiplayerState.Hosting);
-                return;
-            }
-
-
             _currentInstance = __instance;
             _multiController = new MultiplayerController(__instance);
 
-            _state = _previousState = MultiplayerController.MultiplayerState.None;
+            if (_state == MultiplayerController.MultiplayerState.SelectSong)
+                UpdateMultiplayerState(MultiplayerController.MultiplayerState.Hosting);
+            else
+                _previousState = MultiplayerController.MultiplayerState.None;
+
             _isSceneActive = true;
             UpdateMultiplayerState(MultiplayerController.MultiplayerState.Enter);
         }
@@ -115,7 +111,7 @@ namespace TootTally.Multiplayer
                 __instance.quickFlash(2);
                 __instance.fadeAndLoadScene(18);
                 //SceneManager.MoveGameObjectToScene(GameObject.Instantiate(multiplayerButton), scene);
-                
+
                 //1 is HomeScreen
                 //6 and 7 cards collection
                 //9 is LoadController
@@ -136,13 +132,11 @@ namespace TootTally.Multiplayer
             pointerEnterEvent.eventID = EventTriggerType.PointerEnter;
             pointerEnterEvent.callback.AddListener((data) =>
             {
-                if (_multiBtnAnimation != null)
-                    _multiBtnAnimation.Dispose();
+                _multiBtnAnimation?.Dispose();
                 _multiBtnAnimation = AnimationManager.AddNewScaleAnimation(multiplayerButton.transform.Find("outline").gameObject, new Vector2(1.01f, 1.01f), 0.5f, new EasingHelper.SecondOrderDynamics(3.75f, 0.80f, 1.05f));
                 _multiBtnAnimation.SetStartVector(_multiButtonOutlineRectTransform.localScale);
 
-                if (_multiTextAnimation != null)
-                    _multiTextAnimation.Dispose();
+                _multiTextAnimation?.Dispose();
                 _multiTextAnimation = AnimationManager.AddNewScaleAnimation(multiplayerText, new Vector2(1f, 1f), 0.5f, new EasingHelper.SecondOrderDynamics(3.5f, 0.65f, 1.15f));
                 _multiTextAnimation.SetStartVector(multiplayerText.GetComponent<RectTransform>().localScale);
 
@@ -155,13 +149,11 @@ namespace TootTally.Multiplayer
             pointerExitEvent.eventID = EventTriggerType.PointerExit;
             pointerExitEvent.callback.AddListener((data) =>
             {
-                if (_multiBtnAnimation != null)
-                    _multiBtnAnimation.Dispose();
+                _multiBtnAnimation?.Dispose();
                 _multiBtnAnimation = AnimationManager.AddNewScaleAnimation(multiplayerButton.transform.Find("outline").gameObject, new Vector2(.4f, .4f), 0.5f, new EasingHelper.SecondOrderDynamics(1.50f, 0.80f, 1.00f));
                 _multiBtnAnimation.SetStartVector(_multiButtonOutlineRectTransform.localScale);
 
-                if (_multiTextAnimation != null)
-                    _multiTextAnimation.Dispose();
+                _multiTextAnimation?.Dispose();
                 _multiTextAnimation = AnimationManager.AddNewScaleAnimation(multiplayerText, new Vector2(.8f, .8f), 0.5f, new EasingHelper.SecondOrderDynamics(3.5f, 0.65f, 1.15f));
                 _multiTextAnimation.SetStartVector(multiplayerText.GetComponent<RectTransform>().localScale);
 
@@ -193,7 +185,6 @@ namespace TootTally.Multiplayer
             textCollect.GetComponent<RectTransform>().pivot = Vector2.one / 2;
 
             GameObject improvBtnContainer = __instance.btncontainers[(int)HomeScreenButtonIndexes.Improv];
-            //GameThemeManager.OverwriteGameObjectSpriteAndColor(ImprovBtnContainer.transform.Find("FG").gameObject, "ImprovButtonV2.png", Color.white);
             GameObject improvFG = improvBtnContainer.transform.Find("FG").gameObject;
             RectTransform improvFGRectTransform = improvFG.GetComponent<RectTransform>();
             improvBtnContainer.GetComponent<RectTransform>().anchoredPosition = new Vector2(-150, 156);
@@ -221,10 +212,6 @@ namespace TootTally.Multiplayer
 
         }
 
-        [HarmonyPatch(typeof(HomeController), nameof(HomeController.doFastScreenShake))]
-        [HarmonyPrefix]
-        public static bool GetRidOfThatScreenShakePls(HomeController __instance) => false; //THANKS GOD
-
         [HarmonyPatch(typeof(HomeController), nameof(HomeController.Update))]
         [HarmonyPostfix]
         public static void AnimateMultiButton(HomeController __instance)
@@ -233,17 +220,24 @@ namespace TootTally.Multiplayer
                 _multiButtonOutlineRectTransform.transform.parent.transform.Find("FG/texholder").GetComponent<CanvasGroup>().alpha = (_multiButtonOutlineRectTransform.localScale.y - 0.4f) / 1.5f;
         }
 
-        /*[HarmonyPatch(typeof(LevelSelectController), nameof(LevelSelectController.clickBack))]
+        [HarmonyPatch(typeof(LevelSelectController), nameof(LevelSelectController.Start))]
+        [HarmonyPostfix]
+        public static void HideBackButton(LevelSelectController __instance)
+        {
+            __instance.backbutton.gameObject.SetActive(false);
+        }
+
+        [HarmonyPatch(typeof(LevelSelectController), nameof(LevelSelectController.clickPlay))]
         [HarmonyPrefix]
-        public static bool ClickBackButtonMultiplayerSelectSong(LevelSelectController __instance)
+        public static bool ClickPlayButtonMultiplayerSelectSong(LevelSelectController __instance)
         {
             GlobalVariables.levelselect_index = __instance.songindex;
             __instance.back_clicked = true;
             __instance.bgmus.Stop();
             __instance.doSfx(__instance.sfx_slidedown);
-            __instance.fadeOut("playtest", 0.35f);
+            __instance.fadeOut("zzz_playtest", 0.35f);
             return false;
-        }*/
+        }
 
         private static void ResolveMultiplayerState()
         {
@@ -251,13 +245,8 @@ namespace TootTally.Multiplayer
             switch (_state)
             {
                 case MultiplayerController.MultiplayerState.Enter:
-                    _multiController.EnterMainPanelAnimation();
-                    _multiController.OnEnterState();
                     break;
                 case MultiplayerController.MultiplayerState.FirstTimePopUp:
-                    break;
-                case MultiplayerController.MultiplayerState.LoadPanels:
-                    _multiController.AnimateHomeScreenPanels();
                     break;
                 case MultiplayerController.MultiplayerState.Home:
                     break;
@@ -272,7 +261,6 @@ namespace TootTally.Multiplayer
                     break;
                 case MultiplayerController.MultiplayerState.ExitScene:
                     _currentInstance.clickedOK();
-                    _multiController.OnExitAnimation();
                     _multiController = null;
                     break;
             }

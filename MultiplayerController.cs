@@ -10,15 +10,16 @@ namespace TootTally.Multiplayer
 {
     public class MultiplayerController
     {
-        public PlaytestAnims CurrentInstance { get; private set; }
+        public PlaytestAnims GetInstance => CurrentInstance;
+        public static PlaytestAnims CurrentInstance { get; private set; }
 
         private static List<SerializableClass.MultiplayerLobbyInfo> _lobbyInfoList;
 
-        private static GameObject _currentActivePanel;
-        private static bool _isTransitioning;
+        private GameObject _currentActivePanel;
+        private bool _isTransitioning;
 
-        private static MultiplayerMainPanel _multMainPanel;
-        private static MultiplayerLobbyPanel _multLobbyPanel;
+        private MultiplayerMainPanel _multMainPanel;
+        private MultiplayerLobbyPanel _multLobbyPanel;
 
         #region LocalTesting
         private static readonly SerializableClass.MultiplayerUserInfo _gristUser = new SerializableClass.MultiplayerUserInfo()
@@ -71,6 +72,14 @@ namespace TootTally.Multiplayer
             username = "SierraBeta",
             state = "Sansing"
         };
+        private static readonly SerializableClass.MultiplayerUserInfo _runUser = new SerializableClass.MultiplayerUserInfo()
+        {
+            id = 6,
+            country = "TF2",
+            rank = 420,
+            username = "RunDomRun",
+            state = "Singing"
+        };
         #endregion
 
         public MultiplayerController(PlaytestAnims __instance)
@@ -86,11 +95,14 @@ namespace TootTally.Multiplayer
             _multMainPanel = new MultiplayerMainPanel(canvas, this);
             _multLobbyPanel = new MultiplayerLobbyPanel(canvas, this);
 
-            _lobbyInfoList = new List<SerializableClass.MultiplayerLobbyInfo>();
+            if (_lobbyInfoList == null)
+            {
+                _lobbyInfoList = new List<SerializableClass.MultiplayerLobbyInfo>();
+                GetLobbyInfo();
+            }
 
             _currentActivePanel = _multMainPanel.panel;
 
-            GetLobbyInfo();
             AnimationManager.AddNewScaleAnimation(_multMainPanel.panel, Vector3.one, 1f, GetSecondDegreeAnimation(1.5f), (sender) => UpdateLobbyInfo(true));
         }
 
@@ -150,6 +162,17 @@ namespace TootTally.Multiplayer
                 currentState = "Playing: Megalovania",
                 ping = -5f,
                 users = new List<SerializableClass.MultiplayerUserInfo> { _betaUser, _electroUser, _jampotUser, _lumpytfUser, _gloomhonkUser, _gristUser }
+            });
+            _lobbyInfoList.Add(new SerializableClass.MultiplayerLobbyInfo()
+            {
+                id = 5,
+                name = "TestMulti6",
+                title = "RunDom's trolleries",
+                password = "HappyBirthdayElectro",
+                maxPlayerCount = 2,
+                currentState = "Playing: Happy Birthday",
+                ping = 2.5f,
+                users = new List<SerializableClass.MultiplayerUserInfo> { _runUser, _electroUser }
             });
         }
 
@@ -215,41 +238,14 @@ namespace TootTally.Multiplayer
             AnimationManager.AddNewPositionAnimation(nextPanel, Vector2.zero, 0.9f, new EasingHelper.SecondOrderDynamics(1.5f, 0.89f, 1.1f), (sender) => _isTransitioning = false);
         }
 
-        public void AnimateHomeScreenPanels()
-        {
-
-        }
-
-        public void EnterMainPanelAnimation()
-        {
-
-        }
-
-        public void OnEnterState()
-        {
-            if (TootTally.Plugin.userInfo.username != "emmett" || false) //temporary
-                MultiplayerManager.UpdateMultiplayerState(MultiplayerController.MultiplayerState.FirstTimePopUp);
-            else
-                MultiplayerManager.UpdateMultiplayerState(MultiplayerController.MultiplayerState.LoadPanels);
-        }
-
-        public void OnAcceptButtonClick()
-        {
-
-        }
-
         public void OnDeclineButtonClick()
         {
             MultiplayerManager.UpdateMultiplayerState(MultiplayerState.ExitScene);
         }
 
-        public void DestroyFactTextTopBarAndAcceptDeclineButtons()
+        public void TransitionToSongSelection()
         {
-
-        }
-
-        public void OnExitAnimation()
-        {
+            MultiplayerManager.UpdateMultiplayerState(MultiplayerState.SelectSong);
         }
 
         public static EasingHelper.SecondOrderDynamics GetSecondDegreeAnimation(float speedMult = 1f) => new EasingHelper.SecondOrderDynamics(speedMult, 0.75f, 1.15f);

@@ -33,6 +33,7 @@ namespace TootTally.Multiplayer.MultiplayerPanels
         private static CustomAnimation _connectButtonScaleAnimation;
 
         private static SerializableClass.MultiplayerLobbyInfo _selectedLobby;
+        private static GameObject _hoveredLobbyContainer;
         private static GameObject _selectedLobbyContainer;
 
         public MultiplayerMainPanel(GameObject canvas, MultiplayerController controller) : base(canvas, controller, "MainPanel")
@@ -120,7 +121,16 @@ namespace TootTally.Multiplayer.MultiplayerPanels
         {
             _lobbyPlayerListText.text = "<u>Player List</u>\n";
             lobbyInfo.users.ForEach(u => _lobbyPlayerListText.text += $"{u.username}\n");
-            controller.CurrentInstance.sfx_hover.Play();
+            controller.GetInstance.sfx_hover.Play();
+
+            if (_selectedLobbyContainer == null || (_hoveredLobbyContainer != lobbyContainer && _hoveredLobbyContainer != _selectedLobbyContainer))
+            {
+                _hoveredLobbyContainer = lobbyContainer;
+                var outline = _hoveredLobbyContainer.AddComponent<Outline>();
+                outline.effectColor = new Color(.8f, .8f, .95f);
+                outline.effectDistance = Vector2.one * 5f;
+            }
+            
         }
 
         public void OnMouseExitClearLobbyDetails()
@@ -129,6 +139,10 @@ namespace TootTally.Multiplayer.MultiplayerPanels
                 OnMouseEnterDisplayLobbyDetails(_selectedLobby, _selectedLobbyContainer);
             else
                 _lobbyPlayerListText.text = "";
+
+            if (_hoveredLobbyContainer != null && _hoveredLobbyContainer != _selectedLobbyContainer)
+                GameObject.DestroyImmediate(_hoveredLobbyContainer.GetComponent<Outline>());
+            _hoveredLobbyContainer = null;
         }
 
         public void OnMouseClickSelectLobby(SerializableClass.MultiplayerLobbyInfo lobbyInfo, GameObject lobbyContainer)
@@ -140,16 +154,18 @@ namespace TootTally.Multiplayer.MultiplayerPanels
 
             _selectedLobby = lobbyInfo;
             _selectedLobbyContainer = lobbyContainer;
-            var outline = _selectedLobbyContainer.AddComponent<Outline>();
+
+            var outline = _hoveredLobbyContainer.GetComponent<Outline>();
             outline.effectColor = new Color(1, 0, 0);
             outline.effectDistance = Vector2.one * 5f;
+            _hoveredLobbyContainer = null;
 
             _connectButtonScaleAnimation?.Dispose();
             _connectButton.gameObject.SetActive(true);
             _connectButton.transform.localScale = Vector2.zero;
             _connectButton.gameObject.GetComponent<RectTransform>().pivot = Vector2.one / 2f;
             _connectButtonScaleAnimation = AnimationManager.AddNewScaleAnimation(_connectButton.gameObject, Vector3.one, 1f, new EasingHelper.SecondOrderDynamics(2.5f, 0.98f, 1.1f));
-            controller.CurrentInstance.sfx_hover.Play();
+            controller.GetInstance.sfx_hover.Play();
         }
 
         public void ClearAllLobby()
