@@ -1,13 +1,10 @@
-﻿using Rewired.Data;
-using System;
+﻿using Mono.Security.Protocol.Ntlm;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Security.Cryptography;
 using TMPro;
 using TootTally.Graphics;
-using TootTally.Utils.APIServices;
 using UnityEngine;
+using static TootTally.Multiplayer.APIService.MultSerializableClasses;
 
 namespace TootTally.Multiplayer.MultiplayerPanels
 {
@@ -30,11 +27,51 @@ namespace TootTally.Multiplayer.MultiplayerPanels
 
             _backButton = GameObjectFactory.CreateCustomButton(bottomPanelContainer.transform, Vector2.zero, new Vector2(150, 75), "Back", "LobbyBackButton", OnBackButtonClick);
             _selectSongButton = GameObjectFactory.CreateCustomButton(bottomPanelContainer.transform, Vector2.zero, new Vector2(150, 75), "SelectSong", "SelectSongButton", OnSelectSongButtonClick);
+
+            //Variable names my beloved
+            var titleVBox = MultiplayerGameObjectFactory.AddVerticalBox(rightPanelContainerBox.transform);
+            var topHBox = MultiplayerGameObjectFactory.AddHorizontalBox(titleVBox.transform);
+            var t1 = GameObjectFactory.CreateSingleText(topHBox.transform, "TitleText", "Birthday Party", Color.white);
+            t1.alignment = TextAlignmentOptions.TopLeft;
+            var t2 = GameObjectFactory.CreateSingleText(topHBox.transform, "MaxPlayer", "2/24", Color.white);
+            t2.alignment = TextAlignmentOptions.TopRight;
+            var t3 = GameObjectFactory.CreateSingleText(titleVBox.transform, "HostText", "Current Host: Electrostats", Color.white);
+
+            var songVBox = MultiplayerGameObjectFactory.AddVerticalBox(rightPanelContainerBox.transform);
+            var t4 = GameObjectFactory.CreateSingleText(songVBox.transform, "NextSongText", "Next Song:", Color.white);
+            var t5 = GameObjectFactory.CreateSingleText(songVBox.transform, "SongNameText", "Daily Diary", Color.white);
+            var t6 = GameObjectFactory.CreateSingleText(songVBox.transform, "SongDescText", "song japanese chars", Color.white);
+            t4.alignment = t5.alignment = t6.alignment = TextAlignmentOptions.Left;
+
+            var detailVBox = MultiplayerGameObjectFactory.AddVerticalBox(rightPanelContainerBox.transform);
+            var HBox1 = MultiplayerGameObjectFactory.AddHorizontalBox(detailVBox.transform);
+            var t7 = GameObjectFactory.CreateSingleText(HBox1.transform, "GenreText", "Genre: J-POP", Color.white);
+            t7.alignment = TextAlignmentOptions.Left;
+            var t8 = GameObjectFactory.CreateSingleText(HBox1.transform, "GameSpeedText", "Game Speed: 1x", Color.white);
+            t8.alignment = TextAlignmentOptions.Right;
+
+            var HBox2 = MultiplayerGameObjectFactory.AddHorizontalBox(detailVBox.transform);
+            var t9 = GameObjectFactory.CreateSingleText(HBox2.transform, "YearText", "Genre: J-POP", Color.white);
+            t9.alignment = TextAlignmentOptions.Left;
+            var t10 = GameObjectFactory.CreateSingleText(HBox2.transform, "ModsText", "HD,FL", Color.white);
+            t10.alignment = TextAlignmentOptions.Right;
+
+            var t11 = GameObjectFactory.CreateSingleText(detailVBox.transform, "BPMText", "BPM: 172", Color.white);
+            var t12 = GameObjectFactory.CreateSingleText(detailVBox.transform, "RatingText", "Diff: 4.2", Color.white);
+            t11.alignment = t12.alignment = TextAlignmentOptions.Left;
+
+            var pingHBox = MultiplayerGameObjectFactory.AddHorizontalBox(rightPanelContainerBox.transform);
+            var t13 = GameObjectFactory.CreateSingleText(pingHBox.transform, "PingText", "35ms", Color.white);
+            t13.alignment = TextAlignmentOptions.BottomRight;
+
+            var buttonsHBox = MultiplayerGameObjectFactory.AddHorizontalBox(rightPanelContainerBox.transform);
+            GameObjectFactory.CreateCustomButton(buttonsHBox.transform, Vector2.zero, new Vector2(35, 35), "Lobby Settings", "LobbySettingsButton");
+            GameObjectFactory.CreateCustomButton(buttonsHBox.transform, Vector2.zero, new Vector2(35, 35), "Start Game", "StartGameButton");
         }
 
-        public void DIsplayAllUserInfo(List<SerializableClass.MultiplayerUserInfo> users) => users.ForEach(DisplayUserInfo);
+        public void DisplayAllUserInfo(List<MultiplayerUserInfo> users) => users.ForEach(DisplayUserInfo);
 
-        public void DisplayUserInfo(SerializableClass.MultiplayerUserInfo user)
+        public void DisplayUserInfo(MultiplayerUserInfo user)
         {
             var lobbyInfoContainer = GameObject.Instantiate(MultiplayerAssetManager.GetPrefab("containerboxhorizontal"), lobbyUserContainer.transform);
             _userRowsList.Add(lobbyInfoContainer);

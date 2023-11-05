@@ -3,6 +3,7 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 using TootTally.Utils;
+using UnityEngine;
 
 namespace TootTally.Multiplayer
 {
@@ -29,7 +30,10 @@ namespace TootTally.Multiplayer
             TootTally.Plugin.AddModule(this);
         }
 
-        public void Update() { }
+        public void Update() 
+        {
+            
+        }
 
         public void LoadModule()
         {

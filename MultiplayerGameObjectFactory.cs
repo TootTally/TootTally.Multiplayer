@@ -69,5 +69,9 @@ namespace TootTally.Multiplayer
 
             return inputField;
         }
+
+        public static GameObject AddVerticalBox(Transform parent) => GameObject.Instantiate(MultiplayerAssetManager.GetPrefab("containerboxvertical"), parent);
+        public static GameObject AddHorizontalBox(Transform parent) => GameObject.Instantiate(MultiplayerAssetManager.GetPrefab("containerboxhorizontal"), parent);
+
     }
 }

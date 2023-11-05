@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using TootTally.Discord.Core;
 using TootTally.Graphics.Animation;
 using TootTally.Multiplayer.MultiplayerPanels;
-using TootTally.Utils.APIServices;
+using TootTally.Multiplayer.WebsocketServer;
+using TootTally.Utils;
 using TootTally.Utils.Helpers;
 using UnityEngine;
+using static TootTally.Multiplayer.APIService.MultSerializableClasses;
 
 namespace TootTally.Multiplayer
 {
@@ -13,76 +16,25 @@ namespace TootTally.Multiplayer
         public PlaytestAnims GetInstance => CurrentInstance;
         public static PlaytestAnims CurrentInstance { get; private set; }
 
-        private static List<SerializableClass.MultiplayerLobbyInfo> _lobbyInfoList;
+        private static List<MultiplayerLobbyInfo> _lobbyInfoList;
 
         private MultiplayerPanelBase _currentActivePanel, _lastPanel;
-        private Vector2 _lastPosition;
         private bool _isTransitioning;
 
         private MultiplayerMainPanel _multMainPanel;
         private MultiplayerLobbyPanel _multLobbyPanel;
         private MultiplayerCreatePanel _multCreatePanel;
 
-        private int _currentLobbyIndex;
+        private MultiplayerSystem _multiConnection;
 
         #region LocalTesting
-        private static readonly SerializableClass.MultiplayerUserInfo _gristUser = new SerializableClass.MultiplayerUserInfo()
-        {
-            id = 0,
-            country = "USA",
-            rank = -1,
-            username = "gristCollector",
-            state = "Ready"
-        };
-
-        public static readonly SerializableClass.MultiplayerUserInfo _electroUser = new SerializableClass.MultiplayerUserInfo() //Temporary public for testing
+        public static readonly MultiplayerUserInfo _electroUser = new MultiplayerUserInfo() //Temporary public for testing
         {
             id = 1,
             country = "CAD",
             rank = 2,
             username = "Electrostats",
-            state = "Not Ready"
-        };
-
-        private static readonly SerializableClass.MultiplayerUserInfo _gloomhonkUser = new SerializableClass.MultiplayerUserInfo()
-        {
-            id = 2,
-            country = "AUS",
-            rank = 20,
-            username = "GloomHonk",
-            state = "Memeing"
-        };
-        private static readonly SerializableClass.MultiplayerUserInfo _lumpytfUser = new SerializableClass.MultiplayerUserInfo()
-        {
-            id = 3,
-            country = "MOM",
-            rank = 250000,
-            username = "Lumpytf",
-            state = "AFK"
-        };
-        private static readonly SerializableClass.MultiplayerUserInfo _jampotUser = new SerializableClass.MultiplayerUserInfo()
-        {
-            id = 4,
-            country = "DAD",
-            rank = 1,
-            username = "Jampot",
-            state = "Host (Song Select)"
-        };
-        private static readonly SerializableClass.MultiplayerUserInfo _betaUser = new SerializableClass.MultiplayerUserInfo()
-        {
-            id = 5,
-            country = "SANS",
-            rank = 69,
-            username = "SierraBeta",
-            state = "Sansing"
-        };
-        private static readonly SerializableClass.MultiplayerUserInfo _runUser = new SerializableClass.MultiplayerUserInfo()
-        {
-            id = 6,
-            country = "TF2",
-            rank = 420,
-            username = "RunDomRun",
-            state = "Singing"
+            state = 1
         };
         #endregion
 
@@ -121,80 +73,10 @@ namespace TootTally.Multiplayer
                 Plugin.Instance.LogError("Couldn't init create panel");
             }
 
-            if (_lobbyInfoList == null)
-            {
-                _lobbyInfoList = new List<SerializableClass.MultiplayerLobbyInfo>();
-                _currentLobbyIndex = 0;
-                AddLocalLobbyData();
-            }
-
+            _lobbyInfoList ??= new List<MultiplayerLobbyInfo>();
             _currentActivePanel = _multMainPanel;
 
             AnimationManager.AddNewScaleAnimation(_multMainPanel.panel, Vector3.one, 1f, GetSecondDegreeAnimation(1.5f), (sender) => UpdateLobbyInfo(true));
-        }
-
-        public void AddLocalLobbyData()
-        {
-            CreateNewLobby(new SerializableClass.MultiplayerLobbyInfo()
-            {
-                name = "TestMulti1",
-                title = "gristCollector's Lobby",
-                password = "",
-                maxPlayerCount = 16,
-                currentState = "Playing: Never gonna give you up",
-                ping = 69f,
-                users = new List<SerializableClass.MultiplayerUserInfo> { _gristUser }
-            },
-            new SerializableClass.MultiplayerLobbyInfo()
-            {
-                name = "TestMulti2",
-                title = "Electrostats's Lobby",
-                password = "RocketLeague",
-                maxPlayerCount = 32,
-                currentState = "Playing: Taps",
-                ping = 1f,
-                users = new List<SerializableClass.MultiplayerUserInfo> { _electroUser, _jampotUser }
-            },
-            new SerializableClass.MultiplayerLobbyInfo()
-            {
-                name = "TestMulti3",
-                title = "Lumpytf's private room",
-                password = "",
-                maxPlayerCount = 1,
-                currentState = "Selecting Song",
-                ping = 12f,
-                users = new List<SerializableClass.MultiplayerUserInfo> { _lumpytfUser }
-            },
-            new SerializableClass.MultiplayerLobbyInfo()
-            {
-                name = "TestMulti4",
-                title = "GloomHonk's Meme songs",
-                password = "420blazeit",
-                maxPlayerCount = 99,
-                currentState = "Playing: tt is love tt is life",
-                ping = 224f,
-                users = new List<SerializableClass.MultiplayerUserInfo> { _gloomhonkUser }
-            },
-            new SerializableClass.MultiplayerLobbyInfo()
-            {
-                name = "TestMulti5",
-                title = "SierraBeta's Undertale Songs",
-                password = "dododado",
-                maxPlayerCount = 69,
-                currentState = "Playing: Megalovania",
-                ping = -5f,
-                users = new List<SerializableClass.MultiplayerUserInfo> { _betaUser, _electroUser, _jampotUser, _lumpytfUser, _gloomhonkUser, _gristUser }
-            },
-            new SerializableClass.MultiplayerLobbyInfo()
-            {
-                name = "TestMulti6",
-                title = "RunDom's trolleries",
-                password = "HappyBirthdayElectro",
-                maxPlayerCount = 2,
-                currentState = "Playing: Happy Birthday",
-                ping = 2.5f,
-                users = new List<SerializableClass.MultiplayerUserInfo> { _runUser, _electroUser }
-            });
         }
 
         public void OnSliderValueChangeScrollContainer(GameObject container, float value)
@@ -203,7 +85,7 @@ namespace TootTally.Multiplayer
             gridPanelRect.anchoredPosition = new Vector2(gridPanelRect.anchoredPosition.x, Mathf.Min((value * (_lobbyInfoList.Count - 7f) * 105f) - 440f, ((_lobbyInfoList.Count - 8f) * 105f) + 74f - 440f)); //This is so scuffed I fucking love it
         }
 
-        private IEnumerator<WaitForSeconds> DelayDisplayLobbyInfo(float delay, SerializableClass.MultiplayerLobbyInfo lobby, Action<SerializableClass.MultiplayerLobbyInfo> callback)
+        private IEnumerator<WaitForSeconds> DelayDisplayLobbyInfo(float delay, MultiplayerLobbyInfo lobby, Action<MultiplayerLobbyInfo> callback)
         {
             yield return new WaitForSeconds(delay);
             callback(lobby);
@@ -221,13 +103,23 @@ namespace TootTally.Multiplayer
             _multMainPanel.UpdateScrolling(_lobbyInfoList.Count);
         }
 
-        public void ConnectToLobby(SerializableClass.MultiplayerLobbyInfo lobby)
+        public void ConnectToLobby(MultiplayerLobbyInfo lobby)
         {
-            MultiplayerManager.UpdateMultiplayerState(MultiplayerState.Lobby);
-            MoveToLobby();
-            _multLobbyPanel.DIsplayAllUserInfo(lobby.users);
+            if (_multiConnection != null && _multiConnection.ConnectionPending) return;
+
+            _multiConnection?.Disconnect();
+            Plugin.Instance.LogInfo("Connecting to " + lobby.id);
+            _multiConnection = new MultiplayerSystem(lobby.id, false);
+            _multiConnection.OnWebSocketOpenCallback = OnLobbyConnectionSuccess;
         }
 
+        public void OnLobbyConnectionSuccess()
+        {
+            PopUpNotifManager.DisplayNotif("Connected to " + _multiConnection.GetServerID);
+            MultiplayerManager.UpdateMultiplayerState(MultiplayerState.Lobby);
+            MoveToLobby();
+            //_multLobbyPanel.DisplayAllUserInfo(lobby.users);
+        }
 
         public void MoveToCreate()
         {
@@ -255,15 +147,12 @@ namespace TootTally.Multiplayer
             UpdateLobbyInfo(true);
         }
 
-        public void CreateNewLobby(params SerializableClass.MultiplayerLobbyInfo[] lobbyInfo)
+        public void CreateNewLobby(MultiplayerLobbyInfo lobbyInfo)
         {
-            if (lobbyInfo == null || lobbyInfo.Length == 0) return;
+            if (lobbyInfo == null) return;
 
-            for (int i = 0; i < lobbyInfo.Length; i++)
-            {
-                lobbyInfo[i].id = _currentLobbyIndex++;
-            }
-            _lobbyInfoList.AddRange(lobbyInfo);
+            _lobbyInfoList.Add(lobbyInfo);
+            _multiConnection = new MultiplayerSystem(lobbyInfo.id, true);
         }
 
         public void TransitionToPanel(MultiplayerPanelBase nextPanel)
@@ -303,6 +192,15 @@ namespace TootTally.Multiplayer
             Hosting,
             SelectSong,
             ExitScene,
+        }
+
+        public enum MultiplayerUserState
+        {
+            Spectating = -1,
+            NotReady,
+            Ready,
+            Loading,
+            Playing,
         }
 
     }

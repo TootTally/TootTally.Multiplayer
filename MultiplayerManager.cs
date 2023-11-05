@@ -1,7 +1,4 @@
 ﻿using HarmonyLib;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using TootTally.Graphics;
 using TootTally.Graphics.Animation;
 using TootTally.Utils;
@@ -224,13 +221,15 @@ namespace TootTally.Multiplayer
         [HarmonyPostfix]
         public static void HideBackButton(LevelSelectController __instance)
         {
-            __instance.backbutton.gameObject.SetActive(false);
+            __instance.backbutton.gameObject.SetActive(_multiController == null);
         }
 
         [HarmonyPatch(typeof(LevelSelectController), nameof(LevelSelectController.clickPlay))]
         [HarmonyPrefix]
         public static bool ClickPlayButtonMultiplayerSelectSong(LevelSelectController __instance)
         {
+            if (_multiController == null) return true;
+
             GlobalVariables.levelselect_index = __instance.songindex;
             __instance.back_clicked = true;
             __instance.bgmus.Stop();

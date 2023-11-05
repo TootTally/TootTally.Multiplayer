@@ -1,18 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using TMPro;
 using TootTally.Graphics;
 using TootTally.Graphics.Animation;
 using TootTally.Utils;
-using TootTally.Utils.APIServices;
 using TootTally.Utils.Helpers;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using static TootTally.Multiplayer.MultiplayerController;
+using static TootTally.Multiplayer.APIService.MultSerializableClasses;
 
 namespace TootTally.Multiplayer.MultiplayerPanels
 {
@@ -32,7 +27,7 @@ namespace TootTally.Multiplayer.MultiplayerPanels
         private static CustomButton _connectButton, _createLobbyButton;
         private static CustomAnimation _connectButtonScaleAnimation;
 
-        private static SerializableClass.MultiplayerLobbyInfo _selectedLobby;
+        private static MultiplayerLobbyInfo _selectedLobby;
         private static GameObject _hoveredLobbyContainer;
         private static GameObject _selectedLobbyContainer;
 
@@ -79,9 +74,10 @@ namespace TootTally.Multiplayer.MultiplayerPanels
             _connectButton.gameObject.SetActive(false);
         }
 
-        public void DisplayLobby(SerializableClass.MultiplayerLobbyInfo lobbyInfo)
+        public void DisplayLobby(MultiplayerLobbyInfo lobbyInfo)
         {
-            var lobbyContainer = GameObject.Instantiate(MultiplayerAssetManager.GetPrefab("containerboxhorizontal"), lobbyListContainer.transform);
+            
+            var lobbyContainer = MultiplayerGameObjectFactory.AddHorizontalBox(lobbyListContainer.transform);
             _lobbyInfoRowsList.Add(lobbyContainer);
             var button = lobbyContainer.AddComponent<EventTrigger>();
 
@@ -96,18 +92,21 @@ namespace TootTally.Multiplayer.MultiplayerPanels
             button.triggers.Add(pointerClickEvent);
 
             button.triggers.Add(_pointerExitLobbyContainerEvent);
-
-            lobbyContainer.transform.eulerAngles = new Vector3(270, 25, 0);
-            var test = GameObject.Instantiate(MultiplayerAssetManager.GetPrefab("containerboxvertical"), lobbyContainer.transform);
+            var test = MultiplayerGameObjectFactory.AddVerticalBox(lobbyContainer.transform);
             var t1 = GameObjectFactory.CreateSingleText(test.transform, "LobbyName", lobbyInfo.name, Color.white);
             var t2 = GameObjectFactory.CreateSingleText(test.transform, "LobbyState", lobbyInfo.currentState, Color.white);
             t1.alignment = t2.alignment = TextAlignmentOptions.Left;
             var t5 = GameObjectFactory.CreateSingleText(lobbyContainer.transform, "LobbyTitle", $"{lobbyInfo.title}", Color.white);
             t5.alignment = TextAlignmentOptions.Right;
-            var test2 = GameObject.Instantiate(MultiplayerAssetManager.GetPrefab("containerboxvertical"), lobbyContainer.transform);
+
+            if (lobbyInfo.password != "")
+                GameObjectFactory.CreateImageHolder(lobbyContainer.transform, Vector2.zero, Vector2.one * 64f, AssetManager.GetSprite("lock.png"), "LockedLobbyIcon");
+
+            var test2 = MultiplayerGameObjectFactory.AddVerticalBox(lobbyContainer.transform);
             var t3 = GameObjectFactory.CreateSingleText(test2.transform, "LobbyCount", $"{lobbyInfo.users.Count}/{lobbyInfo.maxPlayerCount}", Color.white);
             var t4 = GameObjectFactory.CreateSingleText(test2.transform, "LobbyPing", $"{lobbyInfo.ping}ms", Color.white);
             t3.alignment = t4.alignment = TextAlignmentOptions.Right;
+            lobbyContainer.transform.eulerAngles = new Vector3(270, 25, 0);
             AnimationManager.AddNewEulerAngleAnimation(lobbyContainer, new Vector3(25, 25, 0), 2f, new EasingHelper.SecondOrderDynamics(1.25f, 1f, 1f));
         }
 
@@ -117,7 +116,7 @@ namespace TootTally.Multiplayer.MultiplayerPanels
             _slider.value = 0;
         }
 
-        public void OnMouseEnterDisplayLobbyDetails(SerializableClass.MultiplayerLobbyInfo lobbyInfo, GameObject lobbyContainer) //TODO: Add small outline to hovered lobby
+        public void OnMouseEnterDisplayLobbyDetails(MultiplayerLobbyInfo lobbyInfo, GameObject lobbyContainer)
         {
             _lobbyPlayerListText.text = "<u>Player List</u>\n";
             lobbyInfo.users.ForEach(u => _lobbyPlayerListText.text += $"{u.username}\n");
@@ -145,7 +144,7 @@ namespace TootTally.Multiplayer.MultiplayerPanels
             _hoveredLobbyContainer = null;
         }
 
-        public void OnMouseClickSelectLobby(SerializableClass.MultiplayerLobbyInfo lobbyInfo, GameObject lobbyContainer)
+        public void OnMouseClickSelectLobby(MultiplayerLobbyInfo lobbyInfo, GameObject lobbyContainer)
         {
             if (_selectedLobby == lobbyInfo) return;
 
