@@ -15,24 +15,36 @@ namespace TootTally.Multiplayer.APIService
         [Serializable]
         public class MultiplayerLobbyInfo
         {
+            public string code;
             public string id;
-            public string name;
-            public string title;
-            public string password;
             public int maxPlayerCount;
-            public string currentState;
-            public float ping;
-            public List<MultiplayerUserInfo> users;
+            public string title;
+            //public string password;
+            public int state;
+            public List<MultiplayerUserInfo> players;
+            public MultiplayerSongInfo songInfo;
+        }
+
+        [Serializable]
+        public class MultiplayerSongInfo
+        {
+            public string difficulty;
+            public string fileHash;
+            public float gameSpeed;
+            public int songID;
+            public string songName;
+            public string songShortName;
+            public string trackRef;
         }
 
         [Serializable]
         public class MultiplayerUserInfo
         {
-            public int id;
-            public string username;
             public string country;
+            public int id;
             public int rank;
-            public int state; // states like "spectator" "ready" "not ready" etc.
+            public int team;
+            public string username;
         }
 
     }

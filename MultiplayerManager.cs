@@ -55,6 +55,9 @@ namespace TootTally.Multiplayer
                 else if (_state == MultiplayerController.MultiplayerState.Home)
                     UpdateMultiplayerState(MultiplayerController.MultiplayerState.ExitScene);
             }
+
+            if (_multiController != null && _multiController.IsConnectionPending)
+                _multiController.UpdateConnection();
         }
 
         [HarmonyPatch(typeof(PlaytestAnims), nameof(PlaytestAnims.nextScene))]

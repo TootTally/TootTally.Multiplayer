@@ -8,6 +8,8 @@ using UnityEngine;
 namespace TootTally.Multiplayer
 {
     [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
+    [BepInIncompatibility("Tooter")]
+
     public class Plugin : BaseUnityPlugin, ITootTallyModule
     {
         public static Plugin Instance;

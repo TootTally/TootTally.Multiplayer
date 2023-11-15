@@ -69,6 +69,7 @@ namespace TootTally.Multiplayer.MultiplayerPanels
             _pointerExitLobbyContainerEvent.callback.AddListener((data) => OnMouseExitClearLobbyDetails());
 
             _createLobbyButton = GameObjectFactory.CreateCustomButton(lobbyConnectContainer.transform, Vector2.zero, new Vector2(150, 75), "Create", "LobbyCreateButton", OnCreateLobbyButtonClick);
+            GameObjectFactory.CreateCustomButton(lobbyConnectContainer.transform, Vector2.zero, new Vector2(150, 75), "Refresh", "RefreshLobbyButton", OnRefreshLobbyButtonClick);
 
             _connectButton = GameObjectFactory.CreateCustomButton(lobbyConnectContainer.transform, Vector2.zero, new Vector2(150, 75), "Connect", "LobbyConnectButton", OnConnectButtonClick);
             _connectButton.gameObject.SetActive(false);
@@ -93,18 +94,18 @@ namespace TootTally.Multiplayer.MultiplayerPanels
 
             button.triggers.Add(_pointerExitLobbyContainerEvent);
             var test = MultiplayerGameObjectFactory.AddVerticalBox(lobbyContainer.transform);
-            var t1 = GameObjectFactory.CreateSingleText(test.transform, "LobbyName", lobbyInfo.name, Color.white);
-            var t2 = GameObjectFactory.CreateSingleText(test.transform, "LobbyState", lobbyInfo.currentState, Color.white);
+            var t1 = GameObjectFactory.CreateSingleText(test.transform, "LobbyName", lobbyInfo.songInfo.songShortName, Color.white);
+            var t2 = GameObjectFactory.CreateSingleText(test.transform, "LobbyState", lobbyInfo.code, Color.white);
             t1.alignment = t2.alignment = TextAlignmentOptions.Left;
             var t5 = GameObjectFactory.CreateSingleText(lobbyContainer.transform, "LobbyTitle", $"{lobbyInfo.title}", Color.white);
             t5.alignment = TextAlignmentOptions.Right;
 
-            if (lobbyInfo.password != "")
-                GameObjectFactory.CreateImageHolder(lobbyContainer.transform, Vector2.zero, Vector2.one * 64f, AssetManager.GetSprite("lock.png"), "LockedLobbyIcon");
+            /*if (lobbyInfo.password != null)
+                GameObjectFactory.CreateImageHolder(lobbyContainer.transform, Vector2.zero, Vector2.one * 64f, AssetManager.GetSprite("lock.png"), "LockedLobbyIcon");*/
 
             var test2 = MultiplayerGameObjectFactory.AddVerticalBox(lobbyContainer.transform);
-            var t3 = GameObjectFactory.CreateSingleText(test2.transform, "LobbyCount", $"{lobbyInfo.users.Count}/{lobbyInfo.maxPlayerCount}", Color.white);
-            var t4 = GameObjectFactory.CreateSingleText(test2.transform, "LobbyPing", $"{lobbyInfo.ping}ms", Color.white);
+            var t3 = GameObjectFactory.CreateSingleText(test2.transform, "LobbyCount", $"{lobbyInfo.players.Count}/{lobbyInfo.maxPlayerCount}", Color.white);
+            var t4 = GameObjectFactory.CreateSingleText(test2.transform, "LobbyPing", $"-ms", Color.white);
             t3.alignment = t4.alignment = TextAlignmentOptions.Right;
             lobbyContainer.transform.eulerAngles = new Vector3(270, 25, 0);
             AnimationManager.AddNewEulerAngleAnimation(lobbyContainer, new Vector3(25, 25, 0), 2f, new EasingHelper.SecondOrderDynamics(1.25f, 1f, 1f));
@@ -119,7 +120,7 @@ namespace TootTally.Multiplayer.MultiplayerPanels
         public void OnMouseEnterDisplayLobbyDetails(MultiplayerLobbyInfo lobbyInfo, GameObject lobbyContainer)
         {
             _lobbyPlayerListText.text = "<u>Player List</u>\n";
-            lobbyInfo.users.ForEach(u => _lobbyPlayerListText.text += $"{u.username}\n");
+            lobbyInfo.players.ForEach(u => _lobbyPlayerListText.text += $"{u.username}\n");
 
             if (_selectedLobbyContainer == null || (_hoveredLobbyContainer != lobbyContainer && lobbyContainer != _selectedLobbyContainer))
             {
@@ -161,7 +162,7 @@ namespace TootTally.Multiplayer.MultiplayerPanels
 
             _connectButtonScaleAnimation?.Dispose();
 
-            if (lobbyInfo.users.Count < lobbyInfo.maxPlayerCount)
+            if (lobbyInfo.players.Count < lobbyInfo.maxPlayerCount)
             {
                 _connectButton.gameObject.SetActive(true);
                 _connectButton.transform.localScale = Vector2.zero;
@@ -189,7 +190,12 @@ namespace TootTally.Multiplayer.MultiplayerPanels
         {
             if (_selectedLobby == null) return;
 
-            controller.ConnectToLobby(_selectedLobby);
+            controller.ConnectToLobby(_selectedLobby.code);
+        }
+
+        public void OnRefreshLobbyButtonClick()
+        {
+            controller.RefreshAllLobbyInfo();
         }
     }
 }

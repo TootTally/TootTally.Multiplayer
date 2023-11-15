@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using TootTally.Discord.Core;
 using TootTally.Graphics.Animation;
+using TootTally.Multiplayer.APIService;
 using TootTally.Multiplayer.MultiplayerPanels;
 using TootTally.Multiplayer.WebsocketServer;
 using TootTally.Utils;
@@ -27,16 +29,8 @@ namespace TootTally.Multiplayer
 
         private MultiplayerSystem _multiConnection;
 
-        #region LocalTesting
-        public static readonly MultiplayerUserInfo _electroUser = new MultiplayerUserInfo() //Temporary public for testing
-        {
-            id = 1,
-            country = "CAD",
-            rank = 2,
-            username = "Electrostats",
-            state = 1
-        };
-        #endregion
+        public bool IsUpdating;
+        public bool IsConnectionPending, IsConnected;
 
         public MultiplayerController(PlaytestAnims __instance)
         {
@@ -103,14 +97,23 @@ namespace TootTally.Multiplayer
             _multMainPanel.UpdateScrolling(_lobbyInfoList.Count);
         }
 
-        public void ConnectToLobby(MultiplayerLobbyInfo lobby)
+        public void ConnectToLobby(string code)
         {
             if (_multiConnection != null && _multiConnection.ConnectionPending) return;
 
             _multiConnection?.Disconnect();
-            Plugin.Instance.LogInfo("Connecting to " + lobby.id);
-            _multiConnection = new MultiplayerSystem(lobby.id, false);
-            _multiConnection.OnWebSocketOpenCallback = OnLobbyConnectionSuccess;
+            Plugin.Instance.LogInfo("Connecting to " + code);
+            IsConnectionPending = true;
+            _multiConnection = new MultiplayerSystem(code, false) { OnWebSocketOpenCallback = delegate { IsConnected = true; } };
+        }
+
+        public void UpdateConnection()
+        {
+            if (IsConnected && IsConnectionPending && _multiConnection != null)
+            {
+                IsConnectionPending = false;
+                OnLobbyConnectionSuccess();
+            }
         }
 
         public void OnLobbyConnectionSuccess()
@@ -144,7 +147,13 @@ namespace TootTally.Multiplayer
         public void RefreshAllLobbyInfo()
         {
             _multMainPanel.ClearAllLobby();
-            UpdateLobbyInfo(true);
+            IsUpdating = true;
+            Plugin.Instance.StartCoroutine(MultiplayerAPIService.GetServerList(serverList =>
+            {
+                _lobbyInfoList = serverList;
+                UpdateLobbyInfo(true);
+                IsUpdating = false;
+            }));
         }
 
         public void CreateNewLobby(MultiplayerLobbyInfo lobbyInfo)

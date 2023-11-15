@@ -54,24 +54,13 @@ namespace TootTally.Multiplayer.MultiplayerPanels
             if (_requestPending) return;
 
             _requestPending = true;
-            MultiplayerAPIService.CreateServer(_lobbyName.text, _lobbyDescription.text, _lobbyPassword.text, int.Parse(_lobbyMaxPlayer.text), serverID =>
+            MultiplayerAPIService.CreateServer(_lobbyName.text, _lobbyDescription.text, _lobbyPassword.text, int.Parse(_lobbyMaxPlayer.text), serverCode =>
             {
-                if (serverID != null)
+                if (serverCode != null)
                 {
-                    Plugin.Instance.LogInfo(serverID);
-                    controller.CreateNewLobby(new MultiplayerLobbyInfo()
-                    {
-                        id = serverID,
-                        name = _lobbyName.text,
-                        title = _lobbyDescription.text,
-                        password = _lobbyPassword.text,
-                        maxPlayerCount = int.Parse(_lobbyMaxPlayer.text),
-                        currentState = "Selecting Song",
-                        ping = 69f,
-                        users = new List<MultiplayerUserInfo> { MultiplayerController._electroUser }
-                    });
+                    Plugin.Instance.LogInfo(serverCode);
+                    controller.ConnectToLobby(serverCode);
                     controller.RefreshAllLobbyInfo();
-                    controller.MoveToLobby();
                 }
                 _requestPending = false;
             });
